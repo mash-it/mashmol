@@ -36,6 +36,29 @@ void simulate() {
 		getline(ifs, str); // TODO: Exception
 		sscanf(str.data(), "%lf\t%lf\t%lf", &x, &y, &z);
 		initPosInNm[i] = OpenMM::Vec3(x, y, z);
-		std::cout << x << ',' << y << ',' << z  << std::endl;
+
+		system.addParticle(39.95);	// mass of Ar, gram per mole
+		nonbond->addParticle(0.0, 0.3350, 0.996);	// charge, LJ sigma (nm), well depth (kJ) 
+	}
+
+	OpenMM::VerletIntegrator integrator(0.004);	// step size in ps
+
+	//Let OpenMM Context choose best platform
+	OpenMM::Context context(system, integrator);
+	std::cout << "REMARK Using OpenMM platform ";
+	std::cout << context.getPlatform().getName().c_str() << std::endl;
+
+	// Set starting positions of the atoms. Leave time and velocity zero.
+	context.setPositions(initPosInNm);
+
+	// Simulate.
+	for (int frameNum = 1;; ++frameNum) {
+		// Output current state information
+		OpenMM::State state = context.getState(OpenMM::State::Positions);
+		const double timeInPs = state.getTime();
+		// std::cout << timeInPs << std::endl;
+
+		if (timeInPs >= 100.) break;
+		integrator.step(100);
 	}
 }
