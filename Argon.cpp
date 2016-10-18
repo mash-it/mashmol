@@ -43,8 +43,11 @@ void simulate() {
 
 	OpenMM::VerletIntegrator integrator(0.004);	// step size in ps
 
+	// force to use CPU platform
+	OpenMM::Platform& platform = OpenMM::Platform::getPlatformByName("CPU");
+
 	//Let OpenMM Context choose best platform
-	OpenMM::Context context(system, integrator);
+	OpenMM::Context context(system, integrator, platform);
 	std::cout << "REMARK Using OpenMM platform ";
 	std::cout << context.getPlatform().getName().c_str() << std::endl;
 
