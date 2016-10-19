@@ -12,17 +12,22 @@ int main() {
 }
 
 void simulate() {
-    // Load any shared libraries containing GPU implementations.
-    OpenMM::Platform::loadPluginsFromDirectory(
-        OpenMM::Platform::getDefaultPluginsDirectory());
+	// parameters
+	const int N_atoms = 10;
+	const double bondLength = 1.5;	// Angstrom
+	// Load any shared libraries containing GPU implementations.
+	OpenMM::Platform::loadPluginsFromDirectory(
+      	OpenMM::Platform::getDefaultPluginsDirectory());
 	
-	// Create a system with nonbonded forces.
+	// Create a system with forces.
 	OpenMM::System system;
+
+	OpenMM::HarmonicAngleForce& bondBend = *new OpenMM::HarmonicAngleForce();
+	system.addForce(&bondBend);
 	// OpenMM::NonbondedForce* nonbond = new OpenMM::NonbondedForce();
 	// system.addForce(nonbond);
-	
+
 	// Create Atoms
-	const int N_atoms = 10;
 	double x, y, z;
 	std::vector<OpenMM::Vec3> initPosInNm(N_atoms);
 
@@ -42,8 +47,14 @@ void simulate() {
 		//nonbond->addParticle(0.0, 0.3350, 0.996);	// charge, LJ sigma (nm), well depth (kJ) 
 	}
 
+	// add constraints between two particles
 	for (int i=0; i<N_atoms-1; ++i) {
-		system.addConstraint(i, i+1, 1.5 * OpenMM::NmPerAngstrom);
+		system.addConstraint(i, i+1, bondLength * OpenMM::NmPerAngstrom);
+	}
+
+	// add angle
+	for (int i=0; i<N_atoms-2; ++i) {
+		bondBend.addAngle(i, i+1, i+2, 178.0 * OpenMM::RadiansPerDegree, 1);
 	}
 
 	//OpenMM::VerletIntegrator integrator(0.004);	// step size in ps
@@ -67,8 +78,8 @@ void simulate() {
 		const double timeInPs = state.getTime();
 		writePdbFrame(frameNum, state);
 
-		if (timeInPs >= 1.) break;
-		integrator.step(1);
+		if (timeInPs >= 100.) break;
+		integrator.step(100);
 	}
 
 }
