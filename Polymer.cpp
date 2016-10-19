@@ -83,7 +83,7 @@ void writePdbFrame(int frameNum, const OpenMM::State& state)
 	printf("MODEL	 %d\n", frameNum); // start of frame
 	for (int a = 0; a < (int)posInNm.size(); ++a)
 	{
-		printf("ATOM  %5d  C    C 	 1	", a+1); // atom number
+		printf("ATOM  %5d  C    C      1    ", a+1); // atom number
 		printf("%8.3f%8.3f%8.3f  1.00  0.00\n",	  // coordinates
 			// "*10" converts nanometers to Angstroms
 			posInNm[a][0]*10, posInNm[a][1]*10, posInNm[a][2]*10);
