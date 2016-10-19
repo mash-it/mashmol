@@ -6,15 +6,18 @@
 void simulate();
 void writePdbFrame(int, const OpenMM::State&);
 
+// parameters
+const int N_atoms = 10;
+const double bondLength = 1.5;	// Angstrom
+const bool UseConstraints = false;
+
 int main() {
 	simulate();
 	return 0;
 }
 
 void simulate() {
-	// parameters
-	const int N_atoms = 10;
-	const double bondLength = 1.5;	// Angstrom
+
 	// Load any shared libraries containing GPU implementations.
 	OpenMM::Platform::loadPluginsFromDirectory(
       	OpenMM::Platform::getDefaultPluginsDirectory());
@@ -22,7 +25,9 @@ void simulate() {
 	// Create a system with forces.
 	OpenMM::System system;
 
-	OpenMM::HarmonicAngleForce& bondBend = *new OpenMM::HarmonicAngleForce();
+	OpenMM::HarmonicBondForce&  bondStretch = *new OpenMM::HarmonicBondForce();
+	OpenMM::HarmonicAngleForce& bondBend    = *new OpenMM::HarmonicAngleForce();
+	system.addForce(&bondStretch);
 	system.addForce(&bondBend);
 	// OpenMM::NonbondedForce* nonbond = new OpenMM::NonbondedForce();
 	// system.addForce(nonbond);
@@ -49,12 +54,16 @@ void simulate() {
 
 	// add constraints between two particles
 	for (int i=0; i<N_atoms-1; ++i) {
-		system.addConstraint(i, i+1, bondLength * OpenMM::NmPerAngstrom);
+		if (UseConstraints) {
+			system.addConstraint(i, i+1, bondLength * OpenMM::NmPerAngstrom);
+		} else {
+			bondStretch.addBond(i, i+1, bondLength * OpenMM::NmPerAngstrom, 100);
+		}
 	}
 
 	// add angle
 	for (int i=0; i<N_atoms-2; ++i) {
-		bondBend.addAngle(i, i+1, i+2, 178.0 * OpenMM::RadiansPerDegree, 1);
+		bondBend.addAngle(i, i+1, i+2, 120.0 * OpenMM::RadiansPerDegree, 50);
 	}
 
 	//OpenMM::VerletIntegrator integrator(0.004);	// step size in ps
