@@ -1,5 +1,5 @@
 import itertools
-import math
+import numpy as np
 
 # remove spaces at both sides from string
 def strstrip(s):
@@ -42,10 +42,7 @@ class Molecule:
 				continue
 
 			# calc distance
-			distance2  = (a['x'] - b['x']) ** 2
-			distance2 += (a['y'] - b['y']) ** 2
-			distance2 += (a['z'] - b['z']) ** 2
-			distance = math.sqrt(distance2)
+			distance = np.linalg.norm(a['pos'] - b['pos'])
 
 			if distance < threshold:
 				return True
@@ -80,6 +77,7 @@ class Molecule:
 			except ValueError:
 				pass
 				
+		atom['pos'] = np.array((atom['x'], atom['y'], atom['z']))
 		return atom
 	
 	def get_boxsize(self):
