@@ -1,6 +1,6 @@
-from PdbEditor import Molecule
+from PdbEditor import Protein
 
-mol = Molecule("1SRL.pdb")
+mol = Protein("1SRL.pdb")
 
 for resSeq, res in mol.residues.items():
 	print(res.get_ca())

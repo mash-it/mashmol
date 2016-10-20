@@ -5,19 +5,11 @@ import numpy as np
 def strstrip(s):
 	return str(s).strip()
 
-class Residue(list):
-	def get_ca(self):
-		for atom in self:
-			if atom['atomname'] == 'CA':
-				return atom
-		raise RuntimeError("No CA in this residue")
-
 class Molecule:
-	def __init__(self, filename=None):
+	def __init__(self, filename):
 		self.filename = filename
 		self.file = open(filename)
 		self.read_atoms()
-		self.classify_residues()
 	
 	def read_atoms(self):
 		self.file.seek(0)
@@ -26,37 +18,6 @@ class Molecule:
 			if len(line) > 4 and line[0:4] == "ATOM":
 				self.atoms.append(self.read_atomline(line))
 	
-	def classify_residues(self):
-		self.residues = {} # map from int:resSeq to atoms
-
-		for atom in self.atoms:
-			resSeq = atom['resSeq']
-			if resSeq in self.residues.keys():
-				self.residues[resSeq].append(atom)
-			else:
-				self.residues[resSeq] = Residue()
-				self.residues[resSeq].append(atom)
-	
-	def is_native_contact(self, resSeqA, resSeqB, threshold):
-		try:
-			atomsA = self.residues[resSeqA]
-			atomsB = self.residues[resSeqB]
-		except KeyError:
-			raise RuntimeError(e + "No such residue(s) in this protein")
-
-		for a, b in itertools.product(atomsA, atomsB):
-			# remove hydrogen
-			if a['element'] == 'H' or b['element'] == 'H':
-				continue
-
-			# calc distance
-			distance = np.linalg.norm(a['pos'] - b['pos'])
-
-			if distance < threshold:
-				return True
-
-		return False
-
 	def read_atomline(self, line):
 		# to avoid IndexError
 		line += " " * 80
@@ -120,4 +81,53 @@ class Molecule:
 	def output(self, filename):
 		f = open(filename, 'w')
 		f.write(self.get_pdbtext())
+
+class Residue(list):
+	def get_ca(self):
+		for atom in self:
+			if atom['atomname'] == 'CA':
+				return atom
+		raise RuntimeError("No CA in this residue")
+
+class Protein(Molecule):
+	def __init__(self, filename):
+		super().__init__(filename)
+		self.classify_residues()
+
+	def classify_residues(self):
+		self.residues = {} # map from int:resSeq to atoms
+
+		for atom in self.atoms:
+			resSeq = atom['resSeq']
+			if resSeq in self.residues.keys():
+				self.residues[resSeq].append(atom)
+			else:
+				self.residues[resSeq] = Residue()
+				self.residues[resSeq].append(atom)
+
+
+class GoProtein(Protein):
+	""" Protein implemented as an Go model data"""
+	def __init__(self, filename):
+		super().__init__(filename)
+		
+	def is_native_contact(self, resSeqA, resSeqB, threshold):
+		try:
+			atomsA = self.residues[resSeqA]
+			atomsB = self.residues[resSeqB]
+		except KeyError:
+			raise RuntimeError(e + "No such residue(s) in this protein")
+
+		for a, b in itertools.product(atomsA, atomsB):
+			# remove hydrogen
+			if a['element'] == 'H' or b['element'] == 'H':
+				continue
+
+			# calc distance
+			distance = np.linalg.norm(a['pos'] - b['pos'])
+
+			if distance < threshold:
+				return True
+
+		return False
 
