@@ -1,6 +1,13 @@
 import itertools
 import numpy as np
 
+# global constant 
+degPerRadian = 180. / np.pi
+
+# angle between two vector
+def vecAngle(v1, v2):
+	return np.arccos(np.sum(v1*v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+
 # remove spaces at both sides from string
 def strstrip(s):
 	return str(s).strip()
@@ -110,12 +117,49 @@ class GoProtein(Protein):
 	""" Protein implemented as an Go model data"""
 	def __init__(self, filename):
 		super().__init__(filename)
+		self.getNativeInfo()
+
+	def getNativeInfo(self):
+		# todo: missing of CA atom position
+		res = list(self.residues.keys())
+
+		for i in range(len(res)-1):
+			print(self.getNativeBondLength(res[i], res[i+1]))
+
+		for i in range(len(res)-2):
+			print(self.getNativeAngle(res[i], res[i+1], res[i+2]))
+
+		for i in range(len(res)-3):
+			print(self.getNativeDihedral(res[i], res[i+1], res[i+2], res[i+3]))
 		
-	def nativeBondLength(self, i, j):
-		resA = self.residues[i].getCa()
-		resB = self.residues[j].getCa()
-		distance = np.linalg.norm(resA['pos'] - resB['pos'])
+	def getNativeBondLength(self, i, j):
+		resI = self.residues[i].getCa()
+		resJ = self.residues[j].getCa()
+		distance = np.linalg.norm(resI['pos'] - resJ['pos'])
 		return distance
+	
+	def getNativeAngle(self, i, j, k):
+		resI = self.residues[i].getCa()
+		resJ = self.residues[j].getCa()
+		resK = self.residues[k].getCa()
+		ji = resI['pos'] - resJ['pos']
+		jk = resK['pos'] - resJ['pos']
+		angle = vecAngle(ji, jk)
+		return angle
+
+	def getNativeDihedral(self, i, j, k, l):
+		# 二面角は法線ベクトルの積である
+		resI = self.residues[i].getCa()
+		resJ = self.residues[j].getCa()
+		resK = self.residues[k].getCa()
+		resL = self.residues[l].getCa()
+		ij = resJ['pos'] - resI['pos']
+		jk = resK['pos'] - resJ['pos']
+		kl = resL['pos'] - resK['pos']
+		ijk = np.cross(ij, jk)
+		jkl = np.cross(jk, kl)
+		dihedral = vecAngle(ijk, jkl)
+		return dihedral 
 
 	def isNativeContact(self, resSeqA, resSeqB, threshold):
 		try:
