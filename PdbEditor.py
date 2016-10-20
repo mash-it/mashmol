@@ -5,6 +5,13 @@ import numpy as np
 def strstrip(s):
 	return str(s).strip()
 
+class Residue(list):
+	def get_ca(self):
+		for atom in self:
+			if atom['atomname'] == 'CA':
+				return atom
+		raise RuntimeError("No CA in this residue")
+
 class Molecule:
 	def __init__(self, filename=None):
 		self.filename = filename
@@ -20,14 +27,15 @@ class Molecule:
 				self.atoms.append(self.read_atomline(line))
 	
 	def classify_residues(self):
-		self.residues = {}	# map from int:resSeq to atoms
+		self.residues = {} # map from int:resSeq to atoms
 
 		for atom in self.atoms:
 			resSeq = atom['resSeq']
 			if resSeq in self.residues.keys():
 				self.residues[resSeq].append(atom)
 			else:
-				self.residues[resSeq] = [atom]
+				self.residues[resSeq] = Residue()
+				self.residues[resSeq].append(atom)
 	
 	def is_native_contact(self, resSeqA, resSeqB, threshold):
 		try:
