@@ -9,16 +9,16 @@ class Molecule:
 	def __init__(self, filename):
 		self.filename = filename
 		self.file = open(filename)
-		self.read_atoms()
+		self.readAtoms()
 	
-	def read_atoms(self):
+	def readAtoms(self):
 		self.file.seek(0)
 		self.atoms = []
 		for line in self.file:
 			if len(line) > 4 and line[0:4] == "ATOM":
-				self.atoms.append(self.read_atomline(line))
+				self.atoms.append(self.readAtomline(line))
 	
-	def read_atomline(self, line):
+	def readAtomline(self, line):
 		# to avoid IndexError
 		line += " " * 80
 
@@ -49,7 +49,7 @@ class Molecule:
 		atom['pos'] = np.array((atom['x'], atom['y'], atom['z']))
 		return atom
 	
-	def get_boxsize(self):
+	def getBoxSize(self):
 		xs = [ atom['x'] for atom in self.atoms ]
 		ys = [ atom['y'] for atom in self.atoms ]
 		zs = [ atom['z'] for atom in self.atoms ]
@@ -60,7 +60,7 @@ class Molecule:
 		for atom in self.atoms:
 			atom[distance] += direction
 
-	def get_pdbtext(self):
+	def getPdbText(self):
 		lines = []
 		for atom in self.atoms:
 			lines.append("ATOM  {serial:5d} {atomname:4s}{altLoc:1s}{resName:3s} {chainID:1s}{resSeq:4d}{iCode:1s}   {x:8.3f}{y:8.3f}{z:8.3f}\n".format(
@@ -80,10 +80,10 @@ class Molecule:
 	
 	def output(self, filename):
 		f = open(filename, 'w')
-		f.write(self.get_pdbtext())
+		f.write(self.getPdbText())
 
 class Residue(list):
-	def get_ca(self):
+	def getCa(self):
 		for atom in self:
 			if atom['atomname'] == 'CA':
 				return atom
@@ -92,9 +92,9 @@ class Residue(list):
 class Protein(Molecule):
 	def __init__(self, filename):
 		super().__init__(filename)
-		self.classify_residues()
+		self.classifyResidues()
 
-	def classify_residues(self):
+	def classifyResidues(self):
 		self.residues = {} # map from int:resSeq to atoms
 
 		for atom in self.atoms:
@@ -111,7 +111,7 @@ class GoProtein(Protein):
 	def __init__(self, filename):
 		super().__init__(filename)
 		
-	def is_native_contact(self, resSeqA, resSeqB, threshold):
+	def isNativeContact(self, resSeqA, resSeqB, threshold):
 		try:
 			atomsA = self.residues[resSeqA]
 			atomsB = self.residues[resSeqB]
