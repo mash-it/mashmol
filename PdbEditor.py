@@ -111,6 +111,12 @@ class GoProtein(Protein):
 	def __init__(self, filename):
 		super().__init__(filename)
 		
+	def nativeBondLength(self, i, j):
+		resA = self.residues[i].getCa()
+		resB = self.residues[j].getCa()
+		distance = np.linalg.norm(resA['pos'] - resB['pos'])
+		return distance
+
 	def isNativeContact(self, resSeqA, resSeqB, threshold):
 		try:
 			atomsA = self.residues[resSeqA]

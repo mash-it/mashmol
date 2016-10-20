@@ -1,7 +1,7 @@
-from PdbEditor import Protein
+from PdbEditor import *
 
-mol = Protein("1SRL.pdb")
+mol = GoProtein("1SRL.pdb")
 
-for resSeq, res in mol.residues.items():
-	print(res.getCa())
 
+for k in list(mol.residues.keys())[:-1]:
+	print(mol.nativeBondLength(k, k+1))
