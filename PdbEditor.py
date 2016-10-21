@@ -126,39 +126,42 @@ class GoProtein(Protein):
 		for i in range(len(res)-1):
 			print(self.getNativeBondLength(res[i], res[i+1]))
 
+		print("----")
+
 		for i in range(len(res)-2):
-			print(self.getNativeAngle(res[i], res[i+1], res[i+2]))
+			print(self.getNativeAngle(res[i], res[i+1], res[i+2]) * degPerRadian)
+
+		print("----")
 
 		for i in range(len(res)-3):
-			print(self.getNativeDihedral(res[i], res[i+1], res[i+2], res[i+3]))
+			print(self.getNativeDihedral(res[i], res[i+1], res[i+2], res[i+3]) * degPerRadian)
 		
-	def getNativeBondLength(self, i, j):
-		resI = self.residues[i].getCa()
-		resJ = self.residues[j].getCa()
-		distance = np.linalg.norm(resI['pos'] - resJ['pos'])
+	def getNativeBondLength(self, a, b):
+		# a, b: integer, resSeq
+		posA = self.residues[a].getCa()['pos']
+		posB = self.residues[b].getCa()['pos']
+		distance = np.linalg.norm(posB - posA)
 		return distance
 	
-	def getNativeAngle(self, i, j, k):
-		resI = self.residues[i].getCa()
-		resJ = self.residues[j].getCa()
-		resK = self.residues[k].getCa()
-		ji = resI['pos'] - resJ['pos']
-		jk = resK['pos'] - resJ['pos']
-		angle = vecAngle(ji, jk)
+	def getNativeAngle(self, a, b, c):
+		# a, b, c: integer, resSeq
+		posA = self.residues[a].getCa()['pos']
+		posB = self.residues[b].getCa()['pos']
+		posC = self.residues[c].getCa()['pos']
+		angle = vecAngle(posA-posB, posC-posB)
 		return angle
 
-	def getNativeDihedral(self, i, j, k, l):
+	def getNativeDihedral(self, a, b, c, d):
+		# a, b, c, d: integer, resSeq
 		# 二面角は法線ベクトルの積である
-		resI = self.residues[i].getCa()
-		resJ = self.residues[j].getCa()
-		resK = self.residues[k].getCa()
-		resL = self.residues[l].getCa()
-		ij = resJ['pos'] - resI['pos']
-		jk = resK['pos'] - resJ['pos']
-		kl = resL['pos'] - resK['pos']
-		ijk = np.cross(ij, jk)
-		jkl = np.cross(jk, kl)
-		dihedral = vecAngle(ijk, jkl)
+		# todo: 180-360 degree における一意性の問題
+		posA = self.residues[a].getCa()['pos']
+		posB = self.residues[b].getCa()['pos']
+		posC = self.residues[c].getCa()['pos']
+		posD = self.residues[d].getCa()['pos']
+		abc = np.cross(posC-posB, posB-posA)
+		bcd = np.cross(posD-posC, posC-posB)
+		dihedral = vecAngle(abc, bcd)
 		return dihedral 
 
 	def isNativeContact(self, resSeqA, resSeqB, threshold):
