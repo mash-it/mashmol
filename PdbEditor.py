@@ -6,7 +6,7 @@ degPerRadian = 180. / np.pi
 
 # angle between two vector
 def vecAngle(v1, v2):
-	return np.arccos(np.sum(v1*v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+	return np.arccos(np.dot(v1,v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
 # remove spaces at both sides from string
 def strstrip(s):
@@ -153,15 +153,21 @@ class GoProtein(Protein):
 
 	def getNativeDihedral(self, a, b, c, d):
 		# a, b, c, d: integer, resSeq
-		# 二面角は法線ベクトルの積である
-		# todo: 180-360 degree における一意性の問題
+		# 二面角は二平面の法線ベクトルの積として計算する
 		posA = self.residues[a].getCa()['pos']
 		posB = self.residues[b].getCa()['pos']
 		posC = self.residues[c].getCa()['pos']
 		posD = self.residues[d].getCa()['pos']
-		abc = np.cross(posC-posB, posB-posA)
-		bcd = np.cross(posD-posC, posC-posB)
+		ab = posB - posA
+		bc = posC - posB
+		cd = posD - posC
+		abc = np.cross(ab, bc)
+		bcd = np.cross(bc, cd)
 		dihedral = vecAngle(abc, bcd)
+		# 平面の表裏を考えると二面角にはプラスとマイナスがある
+		# A-BxB-C の外積と C-D が同じ向きの場合をプラスと定義する
+		if np.dot(abc, posD-posC) < 0:
+			dihedral *= -1
 		return dihedral 
 
 	def isNativeContact(self, resSeqA, resSeqB, threshold):
