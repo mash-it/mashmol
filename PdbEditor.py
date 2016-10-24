@@ -12,7 +12,7 @@ def vecAngle(v1, v2):
 def strstrip(s):
 	return str(s).strip()
 
-class Molecule:
+class PdbMolecule:
 	def __init__(self, filename):
 		self.filename = filename
 		self.file = open(filename)
@@ -23,9 +23,9 @@ class Molecule:
 		self.atoms = []
 		for line in self.file:
 			if len(line) > 4 and line[0:4] == "ATOM":
-				self.atoms.append(self.readAtomline(line))
+				self.atoms.append(self.readAtomLine(line))
 	
-	def readAtomline(self, line):
+	def readAtomLine(self, line):
 		# to avoid IndexError
 		line += " " * 80
 
@@ -96,11 +96,11 @@ class Residue(list):
 				return atom
 		raise RuntimeError("No CA in this residue")
 
-class Protein(Molecule):
+class Protein(PdbMolecule):
 	def __init__(self, filename):
 		super().__init__(filename)
 		self.classifyResidues()
-
+	
 	def classifyResidues(self):
 		self.residues = {} # map from int:resSeq to atoms
 
