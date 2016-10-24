@@ -10,5 +10,7 @@ output["angle"] = mol.nativeAngle
 output["dihedral"] = mol.nativeDihedral
 output["contact"] = mol.nativeContact
 
-print(json.dumps(output, indent=4, sort_keys=True))
+#print(json.dumps(output, indent=4, sort_keys=True))
+
+print("OK")
 

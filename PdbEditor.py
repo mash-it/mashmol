@@ -1,5 +1,6 @@
 import itertools
 import numpy as np
+import warnings
 
 # global constant 
 degPerRadian = 180. / np.pi
@@ -119,9 +120,16 @@ class GoProtein(Protein):
 	def __init__(self, filename):
 		super().__init__(filename)
 		self.getNativeInfo()
+		self.checkMissingResidues()
+
+	def checkMissingResidues(self):
+		prev = False
+		for resSeq in self.residues.keys():
+			if prev and resSeq - prev > 1:
+				warnings.warn("There are some missing residues between {} and {}".format(prev, resSeq))
+			prev = resSeq
 
 	def getNativeInfo(self):
-		# todo: missing of CA atom position
 		res = list(self.residues.keys())
 
 		self.nativeBond = []
