@@ -3,6 +3,7 @@ import numpy as np
 
 # global constant 
 degPerRadian = 180. / np.pi
+NATCONT_THRESHOLD = 6.0
 
 # angle between two vector
 def vecAngle(v1, v2):
@@ -123,18 +124,27 @@ class GoProtein(Protein):
 		# todo: missing of CA atom position
 		res = list(self.residues.keys())
 
+		self.nativeBond = []
 		for i in range(len(res)-1):
-			print(self.getNativeBondLength(res[i], res[i+1]))
+			distance = self.getNativeBondLength(res[i], res[i+1])
+			self.nativeBond.append({"atoms": [res[i], res[i+1]], "length": distance})
 
-		print("----")
-
+		self.nativeAngle = []
 		for i in range(len(res)-2):
-			print(self.getNativeAngle(res[i], res[i+1], res[i+2]) * degPerRadian)
+			angle = self.getNativeAngle(res[i], res[i+1], res[i+2]) * degPerRadian
+			self.nativeAngle.append({"atoms": [res[i], res[i+1], res[i+2]], "angle": angle})
 
-		print("----")
-
+		self.nativeDihedral = []
 		for i in range(len(res)-3):
-			print(self.getNativeDihedral(res[i], res[i+1], res[i+2], res[i+3]) * degPerRadian)
+			dihedral = self.getNativeDihedral(res[i], res[i+1], res[i+2], res[i+3]) * degPerRadian
+			self.nativeDihedral.append({"atoms": [res[i], res[i+1], res[i+2], res[i+3]], "dihedral":dihedral})
+
+		self.nativeContact = []
+		for i in range(len(res)):
+			for j in range(i+3, len(res)):
+				if self.isNativeContact(res[i], res[j], NATCONT_THRESHOLD):
+					distance = self.getNativeBondLength(res[i], res[j])
+					self.nativeContact.append({"atoms": [res[i], res[j]], "length": distance})
 		
 	def getNativeBondLength(self, a, b):
 		# a, b: integer, resSeq
@@ -187,6 +197,4 @@ class GoProtein(Protein):
 
 			if distance < threshold:
 				return True
-
-		return False
 
