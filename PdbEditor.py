@@ -126,34 +126,34 @@ class GoProtein(Protein):
 
 		self.nativeBond = []
 		for i in range(len(res)-1):
-			distance = self.getNativeBondLength(res[i], res[i+1])
+			distance = self.getCaDistance(res[i], res[i+1])
 			self.nativeBond.append({"atoms": [res[i], res[i+1]], "length": distance})
 
 		self.nativeAngle = []
 		for i in range(len(res)-2):
-			angle = self.getNativeAngle(res[i], res[i+1], res[i+2]) * degPerRadian
+			angle = self.getCaAngle(res[i], res[i+1], res[i+2]) * degPerRadian
 			self.nativeAngle.append({"atoms": [res[i], res[i+1], res[i+2]], "angle": angle})
 
 		self.nativeDihedral = []
 		for i in range(len(res)-3):
-			dihedral = self.getNativeDihedral(res[i], res[i+1], res[i+2], res[i+3]) * degPerRadian
+			dihedral = self.getCaDihedral(res[i], res[i+1], res[i+2], res[i+3]) * degPerRadian
 			self.nativeDihedral.append({"atoms": [res[i], res[i+1], res[i+2], res[i+3]], "dihedral":dihedral})
 
 		self.nativeContact = []
 		for i in range(len(res)):
 			for j in range(i+3, len(res)):
 				if self.isNativeContact(res[i], res[j], NATCONT_THRESHOLD):
-					distance = self.getNativeBondLength(res[i], res[j])
+					distance = self.getCaDistance(res[i], res[j])
 					self.nativeContact.append({"atoms": [res[i], res[j]], "length": distance})
 		
-	def getNativeBondLength(self, a, b):
+	def getCaDistance(self, a, b):
 		# a, b: integer, resSeq
 		posA = self.residues[a].getCa()['pos']
 		posB = self.residues[b].getCa()['pos']
 		distance = np.linalg.norm(posB - posA)
 		return distance
 	
-	def getNativeAngle(self, a, b, c):
+	def getCaAngle(self, a, b, c):
 		# a, b, c: integer, resSeq
 		posA = self.residues[a].getCa()['pos']
 		posB = self.residues[b].getCa()['pos']
@@ -161,7 +161,7 @@ class GoProtein(Protein):
 		angle = vecAngle(posA-posB, posC-posB)
 		return angle
 
-	def getNativeDihedral(self, a, b, c, d):
+	def getCaDihedral(self, a, b, c, d):
 		# a, b, c, d: integer, resSeq
 		# 二面角は二平面の法線ベクトルの積として計算する
 		posA = self.residues[a].getCa()['pos']
