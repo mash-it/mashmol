@@ -119,6 +119,7 @@ class GoProtein(Protein):
 	""" Protein implemented as an Go model data"""
 	def __init__(self, filename):
 		super().__init__(filename)
+		self.getCaPositions()
 		self.getNativeInfo()
 		self.checkMissingResidues()
 
@@ -129,30 +130,35 @@ class GoProtein(Protein):
 				warnings.warn("There are some missing residues between {} and {}".format(prev, resSeq))
 			prev = resSeq
 
+	def getCaPositions(self):
+		self.positions = []
+		for seq, res in self.residues.items():
+			self.positions.append({"resSeq": seq, "position": res.getCa()['pos'].tolist()})
+
 	def getNativeInfo(self):
 		res = list(self.residues.keys())
 
 		self.nativeBond = []
 		for i in range(len(res)-1):
 			distance = self.getCaDistance(res[i], res[i+1])
-			self.nativeBond.append({"atoms": [res[i], res[i+1]], "length": distance})
+			self.nativeBond.append({"resSeq": [res[i], res[i+1]], "length": distance})
 
 		self.nativeAngle = []
 		for i in range(len(res)-2):
 			angle = self.getCaAngle(res[i], res[i+1], res[i+2]) * degPerRadian
-			self.nativeAngle.append({"atoms": [res[i], res[i+1], res[i+2]], "angle": angle})
+			self.nativeAngle.append({"resSeq": [res[i], res[i+1], res[i+2]], "angle": angle})
 
 		self.nativeDihedral = []
 		for i in range(len(res)-3):
 			dihedral = self.getCaDihedral(res[i], res[i+1], res[i+2], res[i+3]) * degPerRadian
-			self.nativeDihedral.append({"atoms": [res[i], res[i+1], res[i+2], res[i+3]], "dihedral":dihedral})
+			self.nativeDihedral.append({"resSeq": [res[i], res[i+1], res[i+2], res[i+3]], "dihedral":dihedral})
 
 		self.nativeContact = []
 		for i in range(len(res)):
 			for j in range(i+3, len(res)):
 				if self.isNativeContact(res[i], res[j], NATCONT_THRESHOLD):
 					distance = self.getCaDistance(res[i], res[j])
-					self.nativeContact.append({"atoms": [res[i], res[j]], "length": distance})
+					self.nativeContact.append({"resSeq": [res[i], res[j]], "length": distance})
 		
 	def getCaDistance(self, a, b):
 		# a, b: integer, resSeq
