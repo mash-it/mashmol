@@ -9,13 +9,21 @@ mol = GoProtein("1SRL.pdb")
 date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 output = OrderedDict()
-output["_comment"] = {
-	"generated_by": "mashmol {}".format(VERSION),
-	"generated_from": inputfile,
-	"generated_at": date,
-	"unit_length" : "angstrom",
-	"unit_angle" : "degree"
-	}
+
+output["_comment"] = OrderedDict()
+output["_comment"]["generated_by"] = "mashmol {}".format(VERSION)
+output["_comment"]["generated_from"] = inputfile
+output["_comment"]["generated_at"] = date
+output["_comment"]["unit_length"] = "angstrom"
+output["_comment"]["unit_angle"] = "degree"
+
+output["summary"] = OrderedDict()
+output["summary"]["N_atoms"] = len(mol.positions)
+output["summary"]["N_bonds"] = len(mol.nativeBond)
+output["summary"]["N_angle"] = len(mol.nativeAngle)
+output["summary"]["N_dihedral"] = len(mol.nativeDihedral)
+output["summary"]["N_contact"] = len(mol.nativeContact)
+
 output["resID"] = list(mol.residues.keys())
 output["position"] = mol.positions
 output["bond"] = mol.nativeBond
