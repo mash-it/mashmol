@@ -4,7 +4,7 @@ import warnings
 
 # global constant 
 degPerRadian = 180. / np.pi
-NATCONT_THRESHOLD = 6.0
+NATCONT_THRESHOLD = 6.5
 
 # angle between two vector
 def vecAngle(v1, v2):
