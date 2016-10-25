@@ -1,11 +1,21 @@
 from PdbEditor import *
 from collections import OrderedDict
 import json
+from datetime import datetime
 
+VERSION = 0.9
+inputfile = "1SRL.pdb"
 mol = GoProtein("1SRL.pdb")
+date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 output = OrderedDict()
-output["_comment"] = "This file is generated from mashmol 0.9"
+output["_comment"] = {
+	"generated_by": "mashmol {}".format(VERSION),
+	"generated_from": inputfile,
+	"generated_at": date,
+	"unit_length" : "angstrom",
+	"unit_angle" : "degree"
+	}
 output["resID"] = list(mol.residues.keys())
 output["position"] = mol.positions
 output["bond"] = mol.nativeBond
