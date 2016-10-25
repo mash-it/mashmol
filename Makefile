@@ -1,2 +1,8 @@
+CC = g++
+INLUCDES = -I/usr/loca/openmm/include
+LIBS = -L/usr/local/openmm/lib
+CO = -std=c++11
+
 Polymer: Polymer.cpp
-	g++ Polymer.cpp -o Polymer -I/usr/local/openmm/include -L/usr/local/openmm/lib -lOpenMM
+	$(CC) Polymer.cpp -o Polymer $(INCLUDES) $(LIBS) -lOpenMM $(CO)
+

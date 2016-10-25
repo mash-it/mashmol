@@ -2,9 +2,12 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <json.hpp>
 
 void simulate();
 void writePdbFrame(int, const OpenMM::State&);
+
+using json = nlohmann::json;
 
 // parameters
 const int N_atoms = 10;
