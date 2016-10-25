@@ -24,7 +24,7 @@ output["summary"]["N_angle"] = len(mol.nativeAngle)
 output["summary"]["N_dihedral"] = len(mol.nativeDihedral)
 output["summary"]["N_contact"] = len(mol.nativeContact)
 
-output["resID"] = list(mol.residues.keys())
+output["resSeq"] = list(mol.residues.keys())
 output["position"] = mol.positions
 output["bond"] = mol.nativeBond
 output["angle"] = mol.nativeAngle
