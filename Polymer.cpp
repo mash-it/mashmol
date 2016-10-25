@@ -10,8 +10,6 @@ void writePdbFrame(int, const OpenMM::State&);
 using json = nlohmann::json;
 
 // parameters
-const int N_atoms = 10;
-const double bondLength = 1.5;	// Angstrom
 const bool UseConstraints = false;
 
 int main() {
@@ -35,24 +33,29 @@ void simulate() {
 	// OpenMM::NonbondedForce* nonbond = new OpenMM::NonbondedForce();
 	// system.addForce(nonbond);
 
-	// Create Atoms
-	double x, y, z;
-	std::vector<OpenMM::Vec3> initPosInNm(N_atoms);
 
 	// load atom information from input file.
-	std::ifstream ifs("input.dat");
-	std::string str;
+	json molinfo;
+	std::ifstream ifs("input.json");
 	if(ifs.fail()) {
 		std::cerr << "File do not exist.\n";
 		exit(1);
 	}
-	for (int i=0; i<N_atoms; ++i) {
-		getline(ifs, str); // TODO: Exception
-		sscanf(str.data(), "%lf\t%lf\t%lf", &x, &y, &z);
-		initPosInNm[i] = OpenMM::Vec3(x, y, z) * OpenMM::NmPerAngstrom;
+	ifs >> molinfo;
+	const int N_atoms = molinfo["resSeq"].size();
 
-		system.addParticle(12.01);	// mass of Carbon, gram per mole
-		//nonbond->addParticle(0.0, 0.3350, 0.996);	// charge, LJ sigma (nm), well depth (kJ) 
+	// Create Atoms
+	std::vector<OpenMM::Vec3> initPosInNm(N_atoms);
+
+	// map from 
+
+	double x, y, z;
+	for (int i=0; i<N_atoms; ++i) {
+		x = molinfo["position"][i][0];
+		y = molinfo["position"][i][1];
+		z = molinfo["position"][i][2];
+		initPosInNm[i] = OpenMM::Vec3(x, y, z) * OpenMM::NmPerAngstrom;
+		system.addParticle(137.0);	// average mass of amino acid residues
 	}
 
 	// add constraints between two particles
