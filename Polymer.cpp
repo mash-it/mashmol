@@ -11,9 +11,15 @@ void writePdbFrame(int, const OpenMM::State&);
 using json = nlohmann::json;
 
 // global parameters
-const double K_BondStretch = 100.0;
-const double K_BondAngle= 20.0;
+const double K_BondStretch = 40000.0; // amu ps^-2
+const double K_BondAngle= 80.0; // amu nm^2 ps^-2
 const bool UseConstraints = false;
+
+const double Temperature = 300.0; // Kelvin
+const double LangevinFrictionPerPs = 5.0;
+const double SimulationTimeStepInPs = 0.02;
+const double SimulationTimeInPs = 100.0;
+const int N_StepSave = 10;
 
 int main() {
 	simulate();
@@ -90,7 +96,7 @@ void simulate() {
 	}
 
 	//OpenMM::VerletIntegrator integrator(0.004);	// step size in ps
-	OpenMM::LangevinIntegrator integrator(3, 0.04, 0.004);	// step size in ps
+	OpenMM::LangevinIntegrator integrator(Temperature, LangevinFrictionPerPs, SimulationTimeStepInPs);
 
 	// force to use CPU platform
 	OpenMM::Platform& platform = OpenMM::Platform::getPlatformByName("CPU");
@@ -111,8 +117,8 @@ void simulate() {
 		const double timeInPs = state.getTime();
 		writePdbFrame(frameNum, state);
 
-		if (timeInPs >= 10.) break;
-		integrator.step(100);
+		if (timeInPs >= SimulationTimeInPs) break;
+		integrator.step(N_StepSave);
 	}
 
 }
