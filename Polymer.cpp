@@ -13,6 +13,8 @@ using json = nlohmann::json;
 // global parameters
 const double K_BondStretch = 40000.0; // amu ps^-2
 const double K_BondAngle= 80.0; // amu nm^2 ps^-2
+const double K_BondTorsion1 = 4.0; // amu nm^2 ps^-2
+const double K_BondTorsion3 = 2.0; // amu nm^2 ps^-2
 const bool UseConstraints = false;
 
 const double Temperature = 300.0; // Kelvin
@@ -35,10 +37,12 @@ void simulate() {
 	// Create a system with forces.
 	OpenMM::System system;
 
-	OpenMM::HarmonicBondForce&  bondStretch = *new OpenMM::HarmonicBondForce();
-	OpenMM::HarmonicAngleForce& bondBend    = *new OpenMM::HarmonicAngleForce();
+	OpenMM::HarmonicBondForce& bondStretch = *new OpenMM::HarmonicBondForce();
+	OpenMM::HarmonicAngleForce& bondBend = *new OpenMM::HarmonicAngleForce();
+	OpenMM::PeriodicTorsionForce& bondTorsion = *new OpenMM::PeriodicTorsionForce();
 	system.addForce(&bondStretch);
 	system.addForce(&bondBend);
+	system.addForce(&bondTorsion);
 	// OpenMM::NonbondedForce* nonbond = new OpenMM::NonbondedForce();
 	// system.addForce(nonbond);
 
@@ -86,13 +90,26 @@ void simulate() {
 		}
 	}
 
-	// add angle
+	// add angle force
 	for (int i=0; i<molinfo["angle"].size(); ++i) {
 		int p1 = rs2pi[molinfo["angle"][i]["resSeq"][0]];
 		int p2 = rs2pi[molinfo["angle"][i]["resSeq"][1]];
 		int p3 = rs2pi[molinfo["angle"][i]["resSeq"][2]];
 		double angle = molinfo["angle"][i]["angle"];
 		bondBend.addAngle(p1, p2, p3, angle * OpenMM::RadiansPerDegree, K_BondAngle);
+	}
+
+	// add dihedral force
+	for (int i=0; i<molinfo["dihedral"].size(); ++i) {
+		int p1 = rs2pi[molinfo["dihedral"][i]["resSeq"][0]];
+		int p2 = rs2pi[molinfo["dihedral"][i]["resSeq"][1]];
+		int p3 = rs2pi[molinfo["dihedral"][i]["resSeq"][2]];
+		int p4 = rs2pi[molinfo["dihedral"][i]["resSeq"][3]];
+		double dihedral = molinfo["dihedral"][i]["dihedral"];
+		bondTorsion.addTorsion(p1, p2, p3, p4, 
+			1, dihedral * OpenMM::RadiansPerDegree, K_BondTorsion1);
+		bondTorsion.addTorsion(p1, p2, p3, p4, 
+			3, dihedral * OpenMM::RadiansPerDegree, K_BondTorsion3);
 	}
 
 	//OpenMM::VerletIntegrator integrator(0.004);	// step size in ps
