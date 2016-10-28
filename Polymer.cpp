@@ -6,7 +6,6 @@
 #include <map>
 
 void simulate();
-void writePdbFrame(int, const OpenMM::State&);
 
 using json = nlohmann::json;
 
@@ -157,47 +156,49 @@ void simulate() {
 	// set langevin integrator
 	OpenMM::LangevinIntegrator integrator(Temperature, LangevinFrictionPerPs, TimePerStepInPs);
 	integrator.setRandomNumberSeed(RandomSeed);
-	std::cerr << "randomseed:" << integrator.getRandomNumberSeed() << std::endl;
 
 	// Let OpenMM Context choose best platform
 	OpenMM::Context context(system, integrator, platform);
 
-	std::cout << "REMARK Using OpenMM platform ";
+	std::cout << "# Using OpenMM Platform: ";
 	std::cout << context.getPlatform().getName().c_str() << std::endl;
-	std::cout << std::endl;
 
 	// Set starting positions of the atoms. Leave time and velocity zero.
 	context.setPositions(initPosInNm);
+
+	// set output files
+	std::ofstream opdb;
+	opdb.open("output.pdb", std::ios::out);
 
 	// Simulate.
 	for (int frameNum = 1;; ++frameNum) {
 		// Output current state information
 		OpenMM::State state = context.getState(OpenMM::State::Positions);
-		const double timeInPs = state.getTime();
-		writePdbFrame(frameNum, state);
 
-		std::cout << frameNum << std::endl;
+		// Reference atomic positions in the OpenMM State.
+		const std::vector<OpenMM::Vec3>& posInNm = state.getPositions();
+
+		// Use PDB MODEL cards to number trajectory frames
+		opdb << "MODEL " << frameNum << "\n";
+		for (int a = 0; a < (int)posInNm.size(); ++a)
+		{
+			opdb << "ATOM  " << std::setw(5) << a+1 << "  C    C      1    "; // atom number
+			opdb << std::setw(8) << std::setprecision(3) << posInNm[a][0]*10;
+			opdb << std::setw(8) << std::setprecision(3) << posInNm[a][1]*10;
+			opdb << std::setw(8) << std::setprecision(3) << posInNm[a][2]*10;
+			opdb << "  1.00  0.00\n";
+		}
+		opdb << "ENDMDL\n"; // end of frame
+
+		int steps = frameNum * NStepSave;
+		std::cout << '\r';
+		std::cout << std::setw(8) << steps << " steps / ";
+		std::cout << std::setw(8) << SimulationSteps << std::flush;
 		if (frameNum * NStepSave >= SimulationSteps) break;
 		integrator.step(NStepSave);
 	}
+	std::cout << std::endl;
+	opdb.close();
 
-}
-
-// Handy homebrew PDB writer for quick-and-dirty trajectory output.
-void writePdbFrame(int frameNum, const OpenMM::State& state)
-{
-	// Reference atomic positions in the OpenMM State.
-	const std::vector<OpenMM::Vec3>& posInNm = state.getPositions();
-
-	// Use PDB MODEL cards to number trajectory frames
-	printf("MODEL	 %d\n", frameNum); // start of frame
-	for (int a = 0; a < (int)posInNm.size(); ++a)
-	{
-		printf("ATOM  %5d  C    C      1    ", a+1); // atom number
-		printf("%8.3f%8.3f%8.3f  1.00  0.00\n",	  // coordinates
-			// "*10" converts nanometers to Angstroms
-			posInNm[a][0]*10, posInNm[a][1]*10, posInNm[a][2]*10);
-	}
-	printf("ENDMDL\n"); // end of frame
 }
 
