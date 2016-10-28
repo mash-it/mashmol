@@ -24,6 +24,12 @@ output["summary"]["N_angle"] = len(mol.nativeAngle)
 output["summary"]["N_dihedral"] = len(mol.nativeDihedral)
 output["summary"]["N_contact"] = len(mol.nativeContact)
 
+output["parameters"] = OrderedDict()
+output["parameters"]["Temperature"] = 300.0
+output["parameters"]["TimePerStepInPs"] = 0.02
+output["parameters"]["SimulationTimeInPs"] = 100.0
+output["parameters"]["NStepSave"] = 100
+
 output["resSeq"] = list(mol.residues.keys())
 output["position"] = mol.positions
 output["bond"] = mol.nativeBond

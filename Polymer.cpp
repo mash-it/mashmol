@@ -17,13 +17,8 @@ const double K_BondTorsion1 = 4.0; // amu nm^2 ps^-2
 const double K_BondTorsion3 = 2.0; // amu nm^2 ps^-2
 const double E_ExclusionVolume = 0.8; // amu nm^2 ps^-2
 const double ExclusiveDistanceInNm = 0.4; // nm
-const bool UseConstraints = false;
-
-const double Temperature = 300.0; // Kelvin
 const double LangevinFrictionPerPs = 5.0;
-const double SimulationTimeStepInPs = 0.02;
-const double SimulationTimeInPs = 1000.0;
-const int N_StepSave = 100;
+const bool UseConstraints = false;
 
 int main() {
 	simulate();
@@ -42,7 +37,7 @@ void simulate() {
 	// Create a system with forces.
 	OpenMM::System system;
 
-	// load atom information from input file.
+	// load global paremters and atom information from input file.
 	json molinfo;
 	std::ifstream ifs("input.json");
 	if(ifs.fail()) {
@@ -53,6 +48,12 @@ void simulate() {
 
 	const int N_particles = molinfo["resSeq"].size();
 	std::cout << "# Number of Particles : " << N_particles << '\n';
+
+	// set MD paramters
+	const double Temperature = molinfo["parameters"]["Temperature"];
+	const double SimulationTimeInPs = molinfo["parameters"]["SimulationTimeInPs"];
+	const double TimePerStepInPs = molinfo["parameters"]["TimePerStepInPs"];
+	const int NStepSave = molinfo["parameters"]["NStepSave"];
 
 	// Create Atoms
 	std::vector<OpenMM::Vec3> initPosInNm(N_particles);
@@ -71,6 +72,16 @@ void simulate() {
 		z = molinfo["position"][i]["position"][2];
 		initPosInNm[i] = OpenMM::Vec3(x, y, z) * OpenMM::NmPerAngstrom;
 		system.addParticle(137.0);	// average mass of amino acid residues
+	}
+
+	// add repulsive force
+	// (todo: bonding pairs and naitve contact pairs are excluded from this potential)
+	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d/r)^12");
+	system.addForce(&nonlocalRepulsion);
+	nonlocalRepulsion.addGlobalParameter("d", ExclusiveDistanceInNm);
+	nonlocalRepulsion.addGlobalParameter("epsilon", E_ExclusionVolume);
+	for (int i=0; i<N_particles; ++i) {
+		nonlocalRepulsion.addParticle();
 	}
 
 	// add bonding force or constraints between two particles
@@ -113,17 +124,8 @@ void simulate() {
 			3, dihedral * OpenMM::RadiansPerDegree, K_BondTorsion3);
 	}
 
-	// add repulsive force
-	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d/r)^12");
-	system.addForce(&nonlocalRepulsion);
-	nonlocalRepulsion.addGlobalParameter("d", ExclusiveDistanceInNm);
-	nonlocalRepulsion.addGlobalParameter("epsilon", E_ExclusionVolume);
-	for (int i=0; i<N_particles; ++i) {
-		nonlocalRepulsion.addParticle();
-	}
-
 	// set langevin integrator
-	OpenMM::LangevinIntegrator integrator(Temperature, LangevinFrictionPerPs, SimulationTimeStepInPs);
+	OpenMM::LangevinIntegrator integrator(Temperature, LangevinFrictionPerPs, TimePerStepInPs);
 
 	//Let OpenMM Context choose best platform
 	OpenMM::Context context(system, integrator, platform);
@@ -142,7 +144,7 @@ void simulate() {
 		writePdbFrame(frameNum, state);
 
 		if (timeInPs >= SimulationTimeInPs) break;
-		integrator.step(N_StepSave);
+		integrator.step(NStepSave);
 	}
 
 }
