@@ -59,7 +59,7 @@ void simulate() {
 
 	// set MD paramters
 	const double Temperature = molinfo["parameters"]["Temperature"];
-	const double SimulationTimeInPs = molinfo["parameters"]["SimulationTimeInPs"];
+	int SimulationSteps = molinfo["parameters"]["SimulationSteps"];
 	const double TimePerStepInPs = molinfo["parameters"]["TimePerStepInPs"];
 	const int NStepSave = molinfo["parameters"]["NStepSave"];
 
@@ -86,8 +86,8 @@ void simulate() {
 	// This pair potential is excluded from bonded pairs 
 	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d/r)^12");
 	system.addForce(&nonlocalRepulsion);
-	// todo: set cutoff distance
-	// nonlocalRepulsion.setCutoffDistance(D_ExclusionCutoffInNm);
+	nonlocalRepulsion.setNonbondedMethod(OpenMM::CustomNonbondedForce::NonbondedMethod::CutoffNonPeriodic);
+	nonlocalRepulsion.setCutoffDistance(D_ExclusionCutoffInNm);
 	nonlocalRepulsion.addGlobalParameter("d", D_ExclusiveInNm);
 	nonlocalRepulsion.addGlobalParameter("epsilon", E_ExclusionPair);
 	for (int i=0; i<N_particles; ++i) {
@@ -171,7 +171,7 @@ void simulate() {
 		const double timeInPs = state.getTime();
 		writePdbFrame(frameNum, state);
 
-		if (timeInPs >= SimulationTimeInPs) break;
+		if (frameNum * NStepSave >= SimulationSteps) break;
 		integrator.step(NStepSave);
 	}
 
