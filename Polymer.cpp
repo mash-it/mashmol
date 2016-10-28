@@ -11,12 +11,18 @@ void writePdbFrame(int, const OpenMM::State&);
 using json = nlohmann::json;
 
 // global parameters
+// K: spring constant
+// E: Energy
+// D: Distance
+
 const double K_BondStretch = 40000.0; // amu ps^-2
 const double K_BondAngle= 80.0; // amu nm^2 ps^-2
 const double K_BondTorsion1 = 4.0; // amu nm^2 ps^-2
 const double K_BondTorsion3 = 2.0; // amu nm^2 ps^-2
-const double E_ExclusionVolume = 0.8; // amu nm^2 ps^-2
-const double ExclusiveDistanceInNm = 0.4; // nm
+const double E_ExclusionPair = 0.8; // amu nm^2 ps^-2
+const double E_GoContactPair = 1.2; // amu nm^2 ps^-2
+const double D_ExclusiveInNm = 0.4; // nm
+const double D_ExclusionCutoffInNm = 0.2; // nm
 const double LangevinFrictionPerPs = 5.0;
 const bool UseConstraints = false;
 
@@ -76,13 +82,30 @@ void simulate() {
 		system.addParticle(137.0);	// average mass of amino acid residues
 	}
 
-	// add repulsive force
+	// add non-local repulsive force
+	// This pair potential is excluded from bonded pairs 
 	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d/r)^12");
 	system.addForce(&nonlocalRepulsion);
-	nonlocalRepulsion.addGlobalParameter("d", ExclusiveDistanceInNm);
-	nonlocalRepulsion.addGlobalParameter("epsilon", E_ExclusionVolume);
+	// todo: set cutoff distance
+	// nonlocalRepulsion.setCutoffDistance(D_ExclusionCutoffInNm);
+	nonlocalRepulsion.addGlobalParameter("d", D_ExclusiveInNm);
+	nonlocalRepulsion.addGlobalParameter("epsilon", E_ExclusionPair);
 	for (int i=0; i<N_particles; ++i) {
 		nonlocalRepulsion.addParticle();
+	}
+
+	// add non-local Go contact for native contact pairs
+	OpenMM::CustomBondForce goContactForce = *new OpenMM::CustomBondForce("epsilon*(5*(r_native/r)^12 - 6*(r_native/r)^10)");
+	system.addForce(&goContactForce);
+	goContactForce.addGlobalParameter("epsilon", E_GoContactPair);
+	goContactForce.addPerBondParameter("r_native");
+	for (int i=0; i<molinfo["contact"].size(); ++i) {
+		int p1 = rs2pi[molinfo["contact"][i]["resSeq"][0]];
+		int p2 = rs2pi[molinfo["contact"][i]["resSeq"][1]];
+		double r_native = molinfo["contact"][i]["length"];
+		std::vector<double> perBondParams = {r_native * OpenMM::NmPerAngstrom};
+		goContactForce.addBond(p1, p2, perBondParams);
+		nonlocalRepulsion.addExclusion(p1, p2);
 	}
 
 	// add bonding force or constraints between two particles

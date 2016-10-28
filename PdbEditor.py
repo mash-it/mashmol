@@ -155,7 +155,7 @@ class GoProtein(Protein):
 
 		self.nativeContact = []
 		for i in range(len(res)):
-			for j in range(i+3, len(res)):
+			for j in range(i+4, len(res)):
 				if self.isNativeContact(res[i], res[j], NATCONT_THRESHOLD):
 					distance = self.getCaDistance(res[i], res[j])
 					self.nativeContact.append({"resSeq": [res[i], res[j]], "length": distance})
