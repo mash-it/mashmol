@@ -31,6 +31,9 @@ output["parameters"]["SimulationSteps"] = 10000
 output["parameters"]["NStepSave"] = 100
 output["parameters"]["RandomSeed"] = 0
 
+output["output"] = OrderedDict()
+output["output"]["filename"] = "output"
+
 output["resSeq"] = list(mol.residues.keys())
 output["position"] = mol.positions
 output["bond"] = mol.nativeBond

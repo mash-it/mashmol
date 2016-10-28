@@ -63,6 +63,9 @@ void simulate() {
 	const int NStepSave = molinfo["parameters"]["NStepSave"];
 	const int RandomSeed = molinfo["parameters"]["RandomSeed"];
 
+	// set other parameters
+	const std::string filename = molinfo["output"]["filename"];
+
 	// Create Atoms
 	std::vector<OpenMM::Vec3> initPosInNm(N_particles);
 
@@ -168,7 +171,8 @@ void simulate() {
 
 	// set output files
 	std::ofstream opdb;
-	opdb.open("output.pdb", std::ios::out);
+	opdb.open(filename + ".pdb", std::ios::out);
+	std::cout << "# output: " << filename + ".pdb\n";
 
 	// Simulate.
 	for (int frameNum = 1;; ++frameNum) {
