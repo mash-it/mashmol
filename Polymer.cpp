@@ -15,13 +15,15 @@ const double K_BondStretch = 40000.0; // amu ps^-2
 const double K_BondAngle= 80.0; // amu nm^2 ps^-2
 const double K_BondTorsion1 = 4.0; // amu nm^2 ps^-2
 const double K_BondTorsion3 = 2.0; // amu nm^2 ps^-2
+const double E_ExclusionVolume = 0.8; // amu nm^2 ps^-2
+const double ExclusiveDistanceInNm = 0.4; // nm
 const bool UseConstraints = false;
 
 const double Temperature = 300.0; // Kelvin
 const double LangevinFrictionPerPs = 5.0;
 const double SimulationTimeStepInPs = 0.02;
-const double SimulationTimeInPs = 100.0;
-const int N_StepSave = 10;
+const double SimulationTimeInPs = 1000.0;
+const int N_StepSave = 100;
 
 int main() {
 	simulate();
@@ -33,19 +35,12 @@ void simulate() {
 	// Load any shared libraries containing GPU implementations.
 	OpenMM::Platform::loadPluginsFromDirectory(
       	OpenMM::Platform::getDefaultPluginsDirectory());
+
+	// force to use CPU platform that is better than CUDA in my simulation scale
+	OpenMM::Platform& platform = OpenMM::Platform::getPlatformByName("CPU");
 	
 	// Create a system with forces.
 	OpenMM::System system;
-
-	OpenMM::HarmonicBondForce& bondStretch = *new OpenMM::HarmonicBondForce();
-	OpenMM::HarmonicAngleForce& bondBend = *new OpenMM::HarmonicAngleForce();
-	OpenMM::PeriodicTorsionForce& bondTorsion = *new OpenMM::PeriodicTorsionForce();
-	system.addForce(&bondStretch);
-	system.addForce(&bondBend);
-	system.addForce(&bondTorsion);
-	// OpenMM::NonbondedForce* nonbond = new OpenMM::NonbondedForce();
-	// system.addForce(nonbond);
-
 
 	// load atom information from input file.
 	json molinfo;
@@ -78,7 +73,9 @@ void simulate() {
 		system.addParticle(137.0);	// average mass of amino acid residues
 	}
 
-	// add constraints between two particles
+	// add bonding force or constraints between two particles
+	OpenMM::HarmonicBondForce& bondStretch = *new OpenMM::HarmonicBondForce();
+	system.addForce(&bondStretch);
 	for (int i=0; i<molinfo["bond"].size(); ++i) {
 		int p1 = rs2pi[molinfo["bond"][i]["resSeq"][0]];
 		int p2 = rs2pi[molinfo["bond"][i]["resSeq"][1]];
@@ -91,6 +88,8 @@ void simulate() {
 	}
 
 	// add angle force
+	OpenMM::HarmonicAngleForce& bondBend = *new OpenMM::HarmonicAngleForce();
+	system.addForce(&bondBend);
 	for (int i=0; i<molinfo["angle"].size(); ++i) {
 		int p1 = rs2pi[molinfo["angle"][i]["resSeq"][0]];
 		int p2 = rs2pi[molinfo["angle"][i]["resSeq"][1]];
@@ -100,6 +99,8 @@ void simulate() {
 	}
 
 	// add dihedral force
+	OpenMM::PeriodicTorsionForce& bondTorsion = *new OpenMM::PeriodicTorsionForce();
+	system.addForce(&bondTorsion);
 	for (int i=0; i<molinfo["dihedral"].size(); ++i) {
 		int p1 = rs2pi[molinfo["dihedral"][i]["resSeq"][0]];
 		int p2 = rs2pi[molinfo["dihedral"][i]["resSeq"][1]];
@@ -112,11 +113,17 @@ void simulate() {
 			3, dihedral * OpenMM::RadiansPerDegree, K_BondTorsion3);
 	}
 
-	//OpenMM::VerletIntegrator integrator(0.004);	// step size in ps
-	OpenMM::LangevinIntegrator integrator(Temperature, LangevinFrictionPerPs, SimulationTimeStepInPs);
+	// add repulsive force
+	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d/r)^12");
+	system.addForce(&nonlocalRepulsion);
+	nonlocalRepulsion.addGlobalParameter("d", ExclusiveDistanceInNm);
+	nonlocalRepulsion.addGlobalParameter("epsilon", E_ExclusionVolume);
+	for (int i=0; i<N_particles; ++i) {
+		nonlocalRepulsion.addParticle();
+	}
 
-	// force to use CPU platform
-	OpenMM::Platform& platform = OpenMM::Platform::getPlatformByName("CPU");
+	// set langevin integrator
+	OpenMM::LangevinIntegrator integrator(Temperature, LangevinFrictionPerPs, SimulationTimeStepInPs);
 
 	//Let OpenMM Context choose best platform
 	OpenMM::Context context(system, integrator, platform);
