@@ -33,6 +33,8 @@ void simulate() {
 
 	// force to use CPU platform that is better than CUDA in my simulation scale
 	OpenMM::Platform& platform = OpenMM::Platform::getPlatformByName("CPU");
+	// force to use single thread 
+	platform.setPropertyDefaultValue("Threads", "1");
 	
 	// Create a system with forces.
 	OpenMM::System system;
@@ -75,7 +77,6 @@ void simulate() {
 	}
 
 	// add repulsive force
-	// (todo: bonding pairs and naitve contact pairs are excluded from this potential)
 	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d/r)^12");
 	system.addForce(&nonlocalRepulsion);
 	nonlocalRepulsion.addGlobalParameter("d", ExclusiveDistanceInNm);
@@ -96,6 +97,7 @@ void simulate() {
 		} else {
 			bondStretch.addBond(p1, p2, length * OpenMM::NmPerAngstrom, K_BondStretch);
 		}
+		nonlocalRepulsion.addExclusion(p1, p2);
 	}
 
 	// add angle force
@@ -107,6 +109,7 @@ void simulate() {
 		int p3 = rs2pi[molinfo["angle"][i]["resSeq"][2]];
 		double angle = molinfo["angle"][i]["angle"];
 		bondBend.addAngle(p1, p2, p3, angle * OpenMM::RadiansPerDegree, K_BondAngle);
+		nonlocalRepulsion.addExclusion(p1, p3);
 	}
 
 	// add dihedral force
@@ -122,13 +125,15 @@ void simulate() {
 			1, dihedral * OpenMM::RadiansPerDegree, K_BondTorsion1);
 		bondTorsion.addTorsion(p1, p2, p3, p4, 
 			3, dihedral * OpenMM::RadiansPerDegree, K_BondTorsion3);
+		nonlocalRepulsion.addExclusion(p1, p4);
 	}
 
 	// set langevin integrator
 	OpenMM::LangevinIntegrator integrator(Temperature, LangevinFrictionPerPs, TimePerStepInPs);
 
-	//Let OpenMM Context choose best platform
+	// Let OpenMM Context choose best platform
 	OpenMM::Context context(system, integrator, platform);
+
 	std::cout << "REMARK Using OpenMM platform ";
 	std::cout << context.getPlatform().getName().c_str() << std::endl;
 	std::cout << std::endl;
