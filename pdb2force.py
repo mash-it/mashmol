@@ -29,6 +29,7 @@ output["parameters"]["Temperature"] = 300.0
 output["parameters"]["TimePerStepInPs"] = 0.02
 output["parameters"]["SimulationSteps"] = 10000
 output["parameters"]["NStepSave"] = 100
+output["parameters"]["RandomSeed"] = 0
 
 output["resSeq"] = list(mol.residues.keys())
 output["position"] = mol.positions

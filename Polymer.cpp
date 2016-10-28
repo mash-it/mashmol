@@ -62,6 +62,7 @@ void simulate() {
 	int SimulationSteps = molinfo["parameters"]["SimulationSteps"];
 	const double TimePerStepInPs = molinfo["parameters"]["TimePerStepInPs"];
 	const int NStepSave = molinfo["parameters"]["NStepSave"];
+	const int RandomSeed = molinfo["parameters"]["RandomSeed"];
 
 	// Create Atoms
 	std::vector<OpenMM::Vec3> initPosInNm(N_particles);
@@ -86,8 +87,8 @@ void simulate() {
 	// This pair potential is excluded from bonded pairs 
 	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d/r)^12");
 	system.addForce(&nonlocalRepulsion);
-	nonlocalRepulsion.setNonbondedMethod(OpenMM::CustomNonbondedForce::NonbondedMethod::CutoffNonPeriodic);
-	nonlocalRepulsion.setCutoffDistance(D_ExclusionCutoffInNm);
+	// nonlocalRepulsion.setNonbondedMethod(OpenMM::CustomNonbondedForce::NonbondedMethod::CutoffNonPeriodic);
+	// nonlocalRepulsion.setCutoffDistance(D_ExclusionCutoffInNm);
 	nonlocalRepulsion.addGlobalParameter("d", D_ExclusiveInNm);
 	nonlocalRepulsion.addGlobalParameter("epsilon", E_ExclusionPair);
 	for (int i=0; i<N_particles; ++i) {
@@ -95,6 +96,7 @@ void simulate() {
 	}
 
 	// add non-local Go contact for native contact pairs
+	/*
 	OpenMM::CustomBondForce goContactForce = *new OpenMM::CustomBondForce("epsilon*(5*(r_native/r)^12 - 6*(r_native/r)^10)");
 	system.addForce(&goContactForce);
 	goContactForce.addGlobalParameter("epsilon", E_GoContactPair);
@@ -107,6 +109,7 @@ void simulate() {
 		goContactForce.addBond(p1, p2, perBondParams);
 		nonlocalRepulsion.addExclusion(p1, p2);
 	}
+	*/
 
 	// add bonding force or constraints between two particles
 	OpenMM::HarmonicBondForce& bondStretch = *new OpenMM::HarmonicBondForce();
@@ -153,6 +156,8 @@ void simulate() {
 
 	// set langevin integrator
 	OpenMM::LangevinIntegrator integrator(Temperature, LangevinFrictionPerPs, TimePerStepInPs);
+	integrator.setRandomNumberSeed(RandomSeed);
+	std::cerr << "randomseed:" << integrator.getRandomNumberSeed() << std::endl;
 
 	// Let OpenMM Context choose best platform
 	OpenMM::Context context(system, integrator, platform);
@@ -171,6 +176,7 @@ void simulate() {
 		const double timeInPs = state.getTime();
 		writePdbFrame(frameNum, state);
 
+		std::cout << frameNum << std::endl;
 		if (frameNum * NStepSave >= SimulationSteps) break;
 		integrator.step(NStepSave);
 	}
