@@ -21,7 +21,7 @@ const double K_BondTorsion3 = 2.0; // amu nm^2 ps^-2
 const double E_ExclusionPair = 0.8; // amu nm^2 ps^-2
 const double E_GoContactPair = 1.2; // amu nm^2 ps^-2
 const double D_ExclusiveInNm = 0.4; // nm
-const double D_ExclusionCutoffInNm = 0.2; // nm
+const double D_ExclusionCutoffInNm = 2.0; // nm
 const double LangevinFrictionPerPs = 5.0;
 const bool UseConstraints = false;
 
@@ -87,11 +87,11 @@ void simulate() {
 
 	// add non-local repulsive force
 	// This pair potential is excluded from bonded pairs 
-	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d/r)^12");
+	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d_exclusive/r)^12");
 	system.addForce(&nonlocalRepulsion);
-	// nonlocalRepulsion.setNonbondedMethod(OpenMM::CustomNonbondedForce::NonbondedMethod::CutoffNonPeriodic);
-	// nonlocalRepulsion.setCutoffDistance(D_ExclusionCutoffInNm);
-	nonlocalRepulsion.addGlobalParameter("d", D_ExclusiveInNm);
+	nonlocalRepulsion.setNonbondedMethod(OpenMM::CustomNonbondedForce::NonbondedMethod::CutoffNonPeriodic);
+	nonlocalRepulsion.setCutoffDistance(D_ExclusionCutoffInNm);
+	nonlocalRepulsion.addGlobalParameter("d_exclusive", D_ExclusiveInNm);
 	nonlocalRepulsion.addGlobalParameter("epsilon", E_ExclusionPair);
 	for (int i=0; i<N_particles; ++i) {
 		nonlocalRepulsion.addParticle();
