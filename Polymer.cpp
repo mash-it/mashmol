@@ -4,11 +4,13 @@
 #include <cstdlib>
 #include <json.hpp>
 #include <map>
+#include <cmath>
+
+using json = nlohmann::json;
 
 void simulate();
 void writePDBFrame(int, const OpenMM::State&, std::ofstream&);
-
-using json = nlohmann::json;
+double getQscore(const OpenMM::State&, json&);
 
 // global parameters
 // K: spring constant
@@ -25,6 +27,10 @@ const double D_ExclusiveInNm = 0.4; // nm
 const double D_ExclusionCutoffInNm = 2.0; // nm
 const double LangevinFrictionPerPs = 5.0;
 const bool UseConstraints = false;
+const double QscoreThreshold = 1.44;
+
+// global variables
+std::map<int,int> rs2pi;
 
 int main() {
 	simulate();
@@ -71,7 +77,6 @@ void simulate() {
 	std::vector<OpenMM::Vec3> initPosInNm(N_particles);
 
 	// map from resSeq to particle index(0..N-1)
-	std::map<int,int> rs2pi;
 	for (int i=0; i<N_particles; ++i) {
 		int resSeq = molinfo["resSeq"][i];
 		rs2pi.insert(std::pair<int,int>(resSeq, i));
@@ -183,7 +188,9 @@ void simulate() {
 
 		// show progress in stdout
 		int steps = frameNum * NStepSave;
+		double Qscore = getQscore(state, molinfo);
 		std::cout << '\r';
+		std::cout << std::setw(5) << std::setprecision(3) << Qscore;
 		std::cout << std::setw(8) << steps << " steps / ";
 		std::cout << std::setw(8) << SimulationSteps << std::flush;
 		if (frameNum * NStepSave >= SimulationSteps) break;
@@ -208,5 +215,23 @@ void writePDBFrame(int frameNum, const OpenMM::State& state, std::ofstream &opdb
 		opdb << "  1.00  0.00\n";
 	}
 	opdb << "ENDMDL\n"; // end of frame
+}
+
+double getQscore(const OpenMM::State& state, json &molinfo) {
+	const std::vector<OpenMM::Vec3>& posInNm = state.getPositions();
+
+	int contact = 0;
+	for (int i=0; i<molinfo["contact"].size(); ++i) {
+		int p1 = rs2pi[molinfo["contact"][i]["resSeq"][0]];
+		int p2 = rs2pi[molinfo["contact"][i]["resSeq"][1]];
+		double r_native = molinfo["contact"][i]["length"];
+		double r, r2;
+		r2  = pow(posInNm[p1][0]-posInNm[p2][0], 2);
+		r2 += pow(posInNm[p1][1]-posInNm[p2][1], 2);
+		r2 += pow(posInNm[p1][2]-posInNm[p2][2], 2);
+		r = sqrt(r2) / OpenMM::NmPerAngstrom;
+		if (r < r_native * QscoreThreshold ) contact++;
+	}
+	return ((double)contact) / molinfo["contact"].size();
 }
 
