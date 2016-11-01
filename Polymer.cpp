@@ -6,6 +6,7 @@
 #include <map>
 
 void simulate();
+void writePDBFrame(int, const OpenMM::State&, std::ofstream&);
 
 using json = nlohmann::json;
 
@@ -98,7 +99,6 @@ void simulate() {
 	}
 
 	// add non-local Go contact for native contact pairs
-	/*
 	OpenMM::CustomBondForce goContactForce = *new OpenMM::CustomBondForce("epsilon*(5*(r_native/r)^12 - 6*(r_native/r)^10)");
 	system.addForce(&goContactForce);
 	goContactForce.addGlobalParameter("epsilon", E_GoContactPair);
@@ -111,7 +111,6 @@ void simulate() {
 		goContactForce.addBond(p1, p2, perBondParams);
 		nonlocalRepulsion.addExclusion(p1, p2);
 	}
-	*/
 
 	// add bonding force or constraints between two particles
 	OpenMM::HarmonicBondForce& bondStretch = *new OpenMM::HarmonicBondForce();
@@ -179,21 +178,10 @@ void simulate() {
 		// Output current state information
 		OpenMM::State state = context.getState(OpenMM::State::Positions);
 
-		// Reference atomic positions in the OpenMM State.
-		const std::vector<OpenMM::Vec3>& posInNm = state.getPositions();
+		// write PDB frame
+		writePDBFrame(frameNum, state, opdb);
 
-		// Use PDB MODEL cards to number trajectory frames
-		opdb << "MODEL " << frameNum << "\n";
-		for (int a = 0; a < (int)posInNm.size(); ++a)
-		{
-			opdb << "ATOM  " << std::setw(5) << a+1 << "  C    C      1    "; // atom number
-			opdb << std::setw(8) << std::setprecision(3) << posInNm[a][0]*10;
-			opdb << std::setw(8) << std::setprecision(3) << posInNm[a][1]*10;
-			opdb << std::setw(8) << std::setprecision(3) << posInNm[a][2]*10;
-			opdb << "  1.00  0.00\n";
-		}
-		opdb << "ENDMDL\n"; // end of frame
-
+		// show progress in stdout
 		int steps = frameNum * NStepSave;
 		std::cout << '\r';
 		std::cout << std::setw(8) << steps << " steps / ";
@@ -204,5 +192,21 @@ void simulate() {
 	std::cout << std::endl;
 	opdb.close();
 
+}
+
+void writePDBFrame(int frameNum, const OpenMM::State& state, std::ofstream &opdb) {
+	// Reference atomic positions in the OpenMM State.
+	const std::vector<OpenMM::Vec3>& posInNm = state.getPositions();
+
+	opdb << "MODEL " << frameNum << "\n";
+	for (int a = 0; a < (int)posInNm.size(); ++a)
+	{
+		opdb << "ATOM  " << std::setw(5) << a+1 << "  C    C      1    "; // atom number
+		opdb << std::setw(8) << std::setprecision(3) << posInNm[a][0]*10;
+		opdb << std::setw(8) << std::setprecision(3) << posInNm[a][1]*10;
+		opdb << std::setw(8) << std::setprecision(3) << posInNm[a][2]*10;
+		opdb << "  1.00  0.00\n";
+	}
+	opdb << "ENDMDL\n"; // end of frame
 }
 
