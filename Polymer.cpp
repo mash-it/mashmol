@@ -8,7 +8,7 @@
 
 using json = nlohmann::json;
 
-void simulate();
+void simulate(json&);
 void writePDBFrame(int, const OpenMM::State&, std::ofstream&);
 double getQscore(const OpenMM::State&, json&);
 
@@ -32,12 +32,26 @@ const double QscoreThreshold = 1.44;
 // global variables
 std::map<int,int> rs2pi;
 
-int main() {
-	simulate();
+int main(int argc, char* argv[]) {
+	if (argc != 2) {
+		std::cerr << "Usage:\t" << argv[0] << " input.json\n";
+		exit(1);
+	}
+
+	// load global paremters and atom information from input file.
+	json molinfo;
+	std::ifstream ifs(argv[1]);
+	if(ifs.fail()) {
+		std::cerr << "File do not exist.\n";
+		exit(1);
+	}
+	ifs >> molinfo;
+
+	simulate(molinfo);
 	return 0;
 }
 
-void simulate() {
+void simulate(json &molinfo) {
 
 	// Load any shared libraries containing GPU implementations.
 	OpenMM::Platform::loadPluginsFromDirectory(
@@ -50,15 +64,6 @@ void simulate() {
 	
 	// Create a system with forces.
 	OpenMM::System system;
-
-	// load global paremters and atom information from input file.
-	json molinfo;
-	std::ifstream ifs("input.json");
-	if(ifs.fail()) {
-		std::cerr << "File do not exist.\n";
-		exit(1);
-	}
-	ifs >> molinfo;
 
 	const int N_particles = molinfo["resSeq"].size();
 	std::cout << "# Number of Particles : " << N_particles << '\n';
@@ -198,7 +203,6 @@ void simulate() {
 	}
 	std::cout << std::endl;
 	opdb.close();
-
 }
 
 void writePDBFrame(int frameNum, const OpenMM::State& state, std::ofstream &opdb) {
