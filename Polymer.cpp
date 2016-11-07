@@ -9,7 +9,8 @@
 using json = nlohmann::json;
 
 void simulate(json&);
-void writePDBFrame(int, const OpenMM::State&, std::ofstream&);
+void writePDBFrame(int, const OpenMM::State&, json&, std::ofstream&);
+void writeTimeSeries(int, const OpenMM::State&, std::ofstream&, double);
 double getQscore(const OpenMM::State&, json&);
 
 // global parameters
@@ -30,7 +31,7 @@ const bool UseConstraints = false;
 const double QscoreThreshold = 1.44;
 
 // global variables
-std::map<int,int> rs2pi;
+std::map<int,int> rs2pi; // residue sequence to particle index
 
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
@@ -178,26 +179,36 @@ void simulate(json &molinfo) {
 
 	// Set starting positions of the atoms. Leave time and velocity zero.
 	context.setPositions(initPosInNm);
+	// set initial velocity
+	context.setVelocitiesToTemperature(Temperature, RandomSeed);
 
 	// set output files
-	std::ofstream opdb;
+	std::ofstream opdb, ots;
 	opdb.open(filename + ".pdb", std::ios::out);
-	std::cout << "# output: " << filename + ".pdb\n";
+	ots.open(filename + ".ts", std::ios::out);
+	std::cout << "# PDB: " << filename + ".pdb\n";
+	std::cout << "# TimeSereis: " << filename + ".ts\n";
 
 	// Simulate.
+	int infoMask = 0;
+	infoMask = OpenMM::State::Positions;
+	infoMask += OpenMM::State::Energy;
+
 	for (int frameNum = 1;; ++frameNum) {
 		// Output current state information
-		OpenMM::State state = context.getState(OpenMM::State::Positions);
+		OpenMM::State state = context.getState(infoMask);
+		int steps = frameNum * NStepSave;
+		double qscore = getQscore(state, molinfo);
 
 		// write PDB frame
-		writePDBFrame(frameNum, state, opdb);
+		writePDBFrame(frameNum, state, molinfo, opdb);
+		writeTimeSeries(steps, state, ots, qscore);
 
 		// show progress in stdout
-		int steps = frameNum * NStepSave;
-		double Qscore = getQscore(state, molinfo);
 		std::cout << '\r';
-		std::cout << "Q=" << std::setw(5) << std::setprecision(3) << Qscore;
+		std::cout << "Q=" << std::setw(5) << std::setprecision(3) << qscore;
 		std::cout << "; T=" << std::setw(5) << integrator.getTemperature();
+		std::cout << "; E=" << std::setw(5) << state.getPotentialEnergy();
 		std::cout << std::setw(8) << steps << " steps / ";
 		std::cout << std::setw(8) << SimulationSteps << std::flush;
 
@@ -214,16 +225,27 @@ void simulate(json &molinfo) {
 	}
 	std::cout << std::endl;
 	opdb.close();
+	ots.close();
 }
 
-void writePDBFrame(int frameNum, const OpenMM::State& state, std::ofstream &opdb) {
+void writeTimeSeries(int steps, const OpenMM::State& state, std::ofstream &ots, double qscore) {
+	ots << std::setw(8) << steps;
+	ots << std::setw(8) << std::setprecision(3) << qscore;
+	ots << std::setw(8) << state.getPotentialEnergy();
+	ots << std::setw(8) << state.getKineticEnergy();
+	ots << '\n';
+}
+
+void writePDBFrame(int frameNum, const OpenMM::State& state, json &molinfo, std::ofstream &opdb) {
 	// Reference atomic positions in the OpenMM State.
 	const std::vector<OpenMM::Vec3>& posInNm = state.getPositions();
 
 	opdb << "MODEL " << frameNum << "\n";
 	for (int a = 0; a < (int)posInNm.size(); ++a)
 	{
-		opdb << "ATOM  " << std::setw(5) << a+1 << "  C    C      1    "; // atom number
+		opdb << "ATOM  " << std::setw(5) << a+1 << "  C    C  A";
+		opdb << std::setw(4) << (int)molinfo["resSeq"][a];
+		opdb << "    "; // atom number
 		opdb << std::setw(8) << std::setprecision(3) << posInNm[a][0]*10;
 		opdb << std::setw(8) << std::setprecision(3) << posInNm[a][1]*10;
 		opdb << std::setw(8) << std::setprecision(3) << posInNm[a][2]*10;
