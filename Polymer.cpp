@@ -42,11 +42,12 @@ int main(int argc, char* argv[]) {
 	json molinfo;
 	std::ifstream ifs(argv[1]);
 	if(ifs.fail()) {
-		std::cerr << "File do not exist.\n";
+		std::cerr << argv[1] << " :cannot open input file.\n";
 		exit(1);
 	}
 	ifs >> molinfo;
 
+	// run simulation
 	simulate(molinfo);
 	return 0;
 }
@@ -70,7 +71,7 @@ void simulate(json &molinfo) {
 
 	// set MD paramters
 	const double Temperature = molinfo["parameters"]["Temperature"];
-	int SimulationSteps = molinfo["parameters"]["SimulationSteps"];
+	const int SimulationSteps = molinfo["parameters"]["SimulationSteps"];
 	const double TimePerStepInPs = molinfo["parameters"]["TimePerStepInPs"];
 	const int NStepSave = molinfo["parameters"]["NStepSave"];
 	const int RandomSeed = molinfo["parameters"]["RandomSeed"];
@@ -98,20 +99,20 @@ void simulate(json &molinfo) {
 
 	// add non-local repulsive force
 	// This pair potential is excluded from bonded pairs 
-	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon*(d_exclusive/r)^12");
+	OpenMM::CustomNonbondedForce& nonlocalRepulsion = *new OpenMM::CustomNonbondedForce("epsilon_repul*(d_exclusive/r)^12");
 	system.addForce(&nonlocalRepulsion);
 	nonlocalRepulsion.setNonbondedMethod(OpenMM::CustomNonbondedForce::NonbondedMethod::CutoffNonPeriodic);
 	nonlocalRepulsion.setCutoffDistance(D_ExclusionCutoffInNm);
 	nonlocalRepulsion.addGlobalParameter("d_exclusive", D_ExclusiveInNm);
-	nonlocalRepulsion.addGlobalParameter("epsilon", E_ExclusionPair);
+	nonlocalRepulsion.addGlobalParameter("epsilon_repul", E_ExclusionPair);
 	for (int i=0; i<N_particles; ++i) {
 		nonlocalRepulsion.addParticle();
 	}
 
 	// add non-local Go contact for native contact pairs
-	OpenMM::CustomBondForce goContactForce = *new OpenMM::CustomBondForce("epsilon*(5*(r_native/r)^12 - 6*(r_native/r)^10)");
+	OpenMM::CustomBondForce goContactForce = *new OpenMM::CustomBondForce("epsilon_ngo*(5*(r_native/r)^12 - 6*(r_native/r)^10)");
 	system.addForce(&goContactForce);
-	goContactForce.addGlobalParameter("epsilon", E_GoContactPair);
+	goContactForce.addGlobalParameter("epsilon_ngo", E_GoContactPair);
 	goContactForce.addPerBondParameter("r_native");
 	for (int i=0; i<molinfo["contact"].size(); ++i) {
 		int p1 = rs2pi[molinfo["contact"][i]["resSeq"][0]];
@@ -195,9 +196,19 @@ void simulate(json &molinfo) {
 		int steps = frameNum * NStepSave;
 		double Qscore = getQscore(state, molinfo);
 		std::cout << '\r';
-		std::cout << std::setw(5) << std::setprecision(3) << Qscore;
+		std::cout << "Q=" << std::setw(5) << std::setprecision(3) << Qscore;
+		std::cout << "; T=" << std::setw(5) << integrator.getTemperature();
 		std::cout << std::setw(8) << steps << " steps / ";
 		std::cout << std::setw(8) << SimulationSteps << std::flush;
+
+		// tmp
+		if (steps*5 == SimulationSteps) {
+			integrator.setTemperature(50.0);
+			std::cout << std::endl;
+			std::cout << "TEMPERATURE CHANGE";
+			std::cout << std::endl;
+		}
+
 		if (frameNum * NStepSave >= SimulationSteps) break;
 		integrator.step(NStepSave);
 	}
