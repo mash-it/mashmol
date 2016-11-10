@@ -19,6 +19,7 @@ class PdbMolecule:
 		self.filename = filename
 		self.file = open(filename)
 		self.readAtoms()
+		self.pos = np.array([atom['pos'] for atom in self.atoms])
 	
 	def readAtoms(self):
 		self.file.seek(0)

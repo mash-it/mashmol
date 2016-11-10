@@ -214,7 +214,7 @@ void simulate(json &molinfo) {
 
 		// tmp
 		if (steps*5 == SimulationSteps) {
-			integrator.setTemperature(50.0);
+			integrator.setTemperature(100.0);
 			std::cout << std::endl;
 			std::cout << "TEMPERATURE CHANGE";
 			std::cout << std::endl;
@@ -246,9 +246,9 @@ void writePDBFrame(int frameNum, const OpenMM::State& state, json &molinfo, std:
 		opdb << "ATOM  " << std::setw(5) << a+1 << "  C    C  A";
 		opdb << std::setw(4) << (int)molinfo["resSeq"][a];
 		opdb << "    "; // atom number
-		opdb << std::setw(8) << std::setprecision(3) << posInNm[a][0]*10;
-		opdb << std::setw(8) << std::setprecision(3) << posInNm[a][1]*10;
-		opdb << std::setw(8) << std::setprecision(3) << posInNm[a][2]*10;
+		opdb << std::fixed << std::setw(8) << std::setprecision(3) << posInNm[a][0]*10;
+		opdb << std::fixed << std::setw(8) << std::setprecision(3) << posInNm[a][1]*10;
+		opdb << std::fixed << std::setw(8) << std::setprecision(3) << posInNm[a][2]*10;
 		opdb << "  1.00  0.00\n";
 	}
 	opdb << "ENDMDL\n"; // end of frame
