@@ -1,11 +1,12 @@
+import sys
 from PdbEditor import *
 from collections import OrderedDict
 import json
 from datetime import datetime
 
 VERSION = 0.9
-inputfile = "1SRL.pdb"
-mol = GoProtein("1SRL.pdb")
+inputfile = sys.argv[1]
+mol = GoProtein(sys.argv[1])
 date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 output = OrderedDict()
