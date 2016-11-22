@@ -161,9 +161,9 @@ void simulate(json &molinfo) {
 		int p4 = rs2pi[molinfo["dihedral"][i]["resSeq"][3]];
 		double dihedral = molinfo["dihedral"][i]["dihedral"];
 		bondTorsion.addTorsion(p1, p2, p3, p4, 
-			1, dihedral * OpenMM::RadiansPerDegree, K_BondTorsion1);
+			1, (dihedral+180.0) * OpenMM::RadiansPerDegree, K_BondTorsion1);
 		bondTorsion.addTorsion(p1, p2, p3, p4, 
-			3, dihedral * OpenMM::RadiansPerDegree, K_BondTorsion3);
+			3, (dihedral+180.0) * OpenMM::RadiansPerDegree, K_BondTorsion3);
 		nonlocalRepulsion.addExclusion(p1, p4);
 	}
 
@@ -213,12 +213,14 @@ void simulate(json &molinfo) {
 		std::cout << std::setw(8) << SimulationSteps << std::flush;
 
 		// tmp
+		/*
 		if (steps*5 == SimulationSteps) {
 			integrator.setTemperature(100.0);
 			std::cout << std::endl;
 			std::cout << "TEMPERATURE CHANGE";
 			std::cout << std::endl;
 		}
+		*/
 
 		if (frameNum * NStepSave >= SimulationSteps) break;
 		integrator.step(NStepSave);
@@ -230,9 +232,9 @@ void simulate(json &molinfo) {
 
 void writeTimeSeries(int steps, const OpenMM::State& state, std::ofstream &ots, double qscore) {
 	ots << std::setw(8) << steps;
-	ots << std::setw(8) << std::setprecision(3) << qscore;
-	ots << std::setw(8) << state.getPotentialEnergy();
-	ots << std::setw(8) << state.getKineticEnergy();
+	ots << ' ' << std::fixed << std::setw(8) << std::setprecision(3) << qscore;
+	ots << ' ' << std::fixed << std::setw(8) << state.getPotentialEnergy();
+	ots << ' ' << std::fixed << std::setw(8) << state.getKineticEnergy();
 	ots << '\n';
 }
 
