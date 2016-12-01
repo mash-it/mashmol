@@ -13,6 +13,7 @@ void writePDBFrame(int, const OpenMM::State&, json&, std::ofstream&);
 void writeTimeSeries(int, const OpenMM::State&, std::ofstream&, double);
 double getQscore(const OpenMM::State&, json&);
 
+
 // global parameters
 // K: spring constant
 // E: Energy
@@ -32,6 +33,7 @@ const double QscoreThreshold = 1.44;
 
 // global variables
 std::map<int,int> rs2pi; // residue sequence to particle index
+bool SilentMode = true; // do not show progress in stdout
 
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
@@ -205,22 +207,14 @@ void simulate(json &molinfo) {
 		writeTimeSeries(steps, state, ots, qscore);
 
 		// show progress in stdout
-		std::cout << '\r';
-		std::cout << "Q=" << std::setw(5) << std::setprecision(3) << qscore;
-		std::cout << "; T=" << std::setw(5) << integrator.getTemperature();
-		std::cout << "; E=" << std::setw(5) << state.getPotentialEnergy();
-		std::cout << std::setw(8) << steps << " steps / ";
-		std::cout << std::setw(8) << SimulationSteps << std::flush;
-
-		// tmp
-		/*
-		if (steps*5 == SimulationSteps) {
-			integrator.setTemperature(100.0);
-			std::cout << std::endl;
-			std::cout << "TEMPERATURE CHANGE";
-			std::cout << std::endl;
+		if (SilentMode == false) {
+			std::cout << '\r';
+			std::cout << "Q=" << std::setw(5) << std::setprecision(3) << qscore;
+			std::cout << "; T=" << std::setw(5) << integrator.getTemperature();
+			std::cout << "; E=" << std::setw(5) << state.getPotentialEnergy();
+			std::cout << std::setw(8) << steps << " steps / ";
+			std::cout << std::setw(8) << SimulationSteps << std::flush;
 		}
-		*/
 
 		if (frameNum * NStepSave >= SimulationSteps) break;
 		integrator.step(NStepSave);
@@ -228,6 +222,7 @@ void simulate(json &molinfo) {
 	std::cout << std::endl;
 	opdb.close();
 	ots.close();
+
 }
 
 void writeTimeSeries(int steps, const OpenMM::State& state, std::ofstream &ots, double qscore) {

@@ -2,5 +2,5 @@ a.out
 Polymer
 *.pdb
 *.ts
-input.json
+input/
 __pycache__
