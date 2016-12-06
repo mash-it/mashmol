@@ -31,8 +31,8 @@ output["summary"]["N_contact"] = len(mol.nativeContact)
 output["parameters"] = OrderedDict()
 output["parameters"]["Temperature"] = tempk
 output["parameters"]["TimePerStepInPs"] = 0.02
-output["parameters"]["SimulationSteps"] = 1e7
-output["parameters"]["NStepSave"] = 1e3
+output["parameters"]["SimulationSteps"] = int(1e7)
+output["parameters"]["NStepSave"] = int(1e3)
 output["parameters"]["RandomSeed"] = 1
 
 output["output"] = OrderedDict()

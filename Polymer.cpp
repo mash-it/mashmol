@@ -6,6 +6,8 @@
 #include <map>
 #include <cmath>
 
+#include <chrono>
+
 using json = nlohmann::json;
 
 void simulate(json&);
@@ -36,10 +38,13 @@ std::map<int,int> rs2pi; // residue sequence to particle index
 bool SilentMode = true; // do not show progress in stdout
 
 int main(int argc, char* argv[]) {
+
 	if (argc != 2) {
 		std::cerr << "Usage:\t" << argv[0] << " input.json\n";
 		exit(1);
 	}
+
+	const auto startTime = std::chrono::system_clock::now();
 
 	// load global paremters and atom information from input file.
 	json molinfo;
@@ -52,6 +57,15 @@ int main(int argc, char* argv[]) {
 
 	// run simulation
 	simulate(molinfo);
+
+	const auto endTime = std::chrono::system_clock::now();
+	const auto timeSpan = endTime - startTime;
+	const int timeSpanInmsec = std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count();
+	const double timeSpanInSec = timeSpanInmsec / 1000.0;
+
+	std::cout << "using time: " << timeSpanInSec << '\n';
+	std::cout << "step per sec: " << (double)molinfo["parameters"]["SimulationSteps"] / timeSpanInSec << '\n';
+
 	return 0;
 }
 
