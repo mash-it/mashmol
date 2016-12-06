@@ -113,7 +113,7 @@ void simulate(json &molinfo) {
 	}
 
 	// add non-local Go contact for native contact pairs
-	OpenMM::CustomBondForce goContactForce = *new OpenMM::CustomBondForce("epsilon_ngo*(5*(r_native/r)^12 - 6*(r_native/r)^10)");
+	OpenMM::CustomBondForce& goContactForce = *new OpenMM::CustomBondForce("epsilon_ngo*(5*(r_native/r)^12 - 6*(r_native/r)^10)");
 	system.addForce(&goContactForce);
 	goContactForce.addGlobalParameter("epsilon_ngo", E_GoContactPair);
 	goContactForce.addPerBondParameter("r_native");
