@@ -8,7 +8,7 @@ tempk = float(sys.argv[2])
 
 VERSION = 0.9
 inputfile = sys.argv[1]
-pdbid = inputfile.split(".")[0]
+pdbid = inputfile.split(".")[0].split("/")[-1]
 mol = GoProtein(sys.argv[1])
 date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -32,11 +32,11 @@ output["parameters"] = OrderedDict()
 output["parameters"]["Temperature"] = tempk
 output["parameters"]["TimePerStepInPs"] = 0.02
 output["parameters"]["SimulationSteps"] = int(1e7)
-output["parameters"]["NStepSave"] = int(1e3)
+output["parameters"]["NStepSave"] = int(1e4)
 output["parameters"]["RandomSeed"] = 1
 
 output["output"] = OrderedDict()
-output["output"]["filename"] = pdbid + "-" + sys.argv[2]
+output["output"]["filename"] = "output/" + pdbid + "-" + sys.argv[2]
 
 output["resSeq"] = list(mol.residues.keys())
 output["position"] = mol.positions

@@ -5,8 +5,8 @@
 #include <json.hpp>
 #include <map>
 #include <cmath>
-
 #include <chrono>
+#include <unistd.h>
 
 using json = nlohmann::json;
 
@@ -35,16 +35,14 @@ const double QscoreThreshold = 1.44;
 
 // global variables
 std::map<int,int> rs2pi; // residue sequence to particle index
-bool SilentMode = true; // do not show progress in stdout
+bool SilentMode = false; // do not show progress in stdout
 
 int main(int argc, char* argv[]) {
 
-	if (argc != 2) {
+	if (argc == 1) {
 		std::cerr << "Usage:\t" << argv[0] << " input.json\n";
 		exit(1);
 	}
-
-	const auto startTime = std::chrono::system_clock::now();
 
 	// load global paremters and atom information from input file.
 	json molinfo;
@@ -55,6 +53,22 @@ int main(int argc, char* argv[]) {
 	}
 	ifs >> molinfo;
 
+	// read other options
+	int result;
+	while ((result = getopt(argc, argv, "s"))!=-1) {
+		switch(result) {
+			case 's':
+				SilentMode = true;
+				break;
+			case ':':
+				break;
+			case '?':
+				break;
+		}
+	}
+
+	const auto startTime = std::chrono::system_clock::now();
+
 	// run simulation
 	simulate(molinfo);
 
@@ -63,8 +77,8 @@ int main(int argc, char* argv[]) {
 	const int timeSpanInmsec = std::chrono::duration_cast<std::chrono::milliseconds>(timeSpan).count();
 	const double timeSpanInSec = timeSpanInmsec / 1000.0;
 
-	std::cout << "using time: " << timeSpanInSec << '\n';
-	std::cout << "step per sec: " << (double)molinfo["parameters"]["SimulationSteps"] / timeSpanInSec << '\n';
+	std::cout << "Time: " << timeSpanInSec << '\n';
+	std::cout << "Speed: " << (double)molinfo["parameters"]["SimulationSteps"] / timeSpanInSec << "steps/sec" << '\n';
 
 	return 0;
 }
@@ -205,12 +219,12 @@ void simulate(json &molinfo) {
 	std::cout << "# PDB: " << filename + ".pdb\n";
 	std::cout << "# TimeSereis: " << filename + ".ts\n";
 
-	// Simulate.
 	int infoMask = 0;
 	infoMask = OpenMM::State::Positions;
 	infoMask += OpenMM::State::Energy;
 
-	for (int frameNum = 1;; ++frameNum) {
+	for (int frameNum = 0;; ++frameNum) {
+
 		// Output current state information
 		OpenMM::State state = context.getState(infoMask);
 		int steps = frameNum * NStepSave;
@@ -231,6 +245,7 @@ void simulate(json &molinfo) {
 		}
 
 		if (frameNum * NStepSave >= SimulationSteps) break;
+
 		integrator.step(NStepSave);
 	}
 	std::cout << std::endl;

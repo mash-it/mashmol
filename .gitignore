@@ -1,6 +1,7 @@
 a.out
 Polymer
-*.pdb
 *.ts
 input/
+output/
+pdb/
 __pycache__
