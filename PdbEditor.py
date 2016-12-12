@@ -25,7 +25,7 @@ class PdbMolecule:
 		self.file.seek(0)
 		self.atoms = []
 		for line in self.file:
-			if len(line) > 4 and line[0:4] == "ATOM":
+			if line.split()[0] in ["ATOM", "HETATM"]:
 				self.atoms.append(self.readAtomLine(line))
 	
 	def readAtomLine(self, line):
