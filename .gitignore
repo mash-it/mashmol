@@ -1,4 +1,5 @@
 mashmol
+*.psf
 input/*
 output/*
 pdb/*
