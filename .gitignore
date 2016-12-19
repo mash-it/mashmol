@@ -1,7 +1,5 @@
-a.out
-Polymer
-*.ts
-input/
-output/
-pdb/
+mashmol
+input/*
+output/*
+pdb/*
 __pycache__
