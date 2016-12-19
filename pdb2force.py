@@ -1,10 +1,9 @@
 import sys
-from PdbEditor import *
+from PdbMolecule import *
 from collections import OrderedDict
 import json
 from datetime import datetime
 
-tempk = float(sys.argv[2])
 
 VERSION = 0.9
 inputfile = sys.argv[1]
@@ -29,14 +28,14 @@ output["summary"]["N_dihedral"] = len(mol.nativeDihedral)
 output["summary"]["N_contact"] = len(mol.nativeContact)
 
 output["parameters"] = OrderedDict()
-output["parameters"]["Temperature"] = tempk
+output["parameters"]["Temperature"] = 300.0
 output["parameters"]["TimePerStepInPs"] = 0.02
-output["parameters"]["SimulationSteps"] = int(1e7)
-output["parameters"]["NStepSave"] = int(1e4)
+output["parameters"]["SimulationSteps"] = int(1e6)
+output["parameters"]["NStepSave"] = int(1e3)
 output["parameters"]["RandomSeed"] = 1
 
 output["output"] = OrderedDict()
-output["output"]["filename"] = "output/" + pdbid + "-" + sys.argv[2]
+output["output"]["filename"] = "output"
 
 output["resSeq"] = list(mol.residues.keys())
 output["position"] = mol.positions

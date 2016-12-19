@@ -1,44 +1,44 @@
-#mashmol document
+#mashmol
 
-## Residue class
-list の派生クラスで Atom object のリスト。
+Coarse-Grained Go-model protein MD simluation based on OpenMM written in C++.
 
-`getCa(self)`
-その残基におけるα炭素の atom object を取得する。
+## Environment and Dependency
 
-## GoProtein class
+* C++11
+* Python 3.x and numpy
+* [OpenMM](http://openmm.org/)
+* [json.hpp](https://github.com/nlohmann/json)
 
-`class GoProtein(filename)`
-PDB file を開いて Go モデルの Protein として解釈する。
-
-### コンストラクタで呼び出されるメソッド
-
-`readAtoms()`
-PDB file に含まれる `ATOM` 行をすべて読んで `self.atoms` プロパティに入れる。
-
-`classifyResidues()`
-各原子を残基ごとに分類して `self.residues` に格納する。`self.residues` は `int resSeq -> Residue` の dict である。
-
-`readAtomLine(line)`
-string を Atom object に変換して返す。Atom object はそういうクラスではなく単なる dict であり、`serial`, `atomname`, `altLoc` といった PDB の基本的な要素のほか、座標を `numpy.array` 化した `atom['pos']` が含まれる。
-
-### その他のメソッド
-
-`getBoxSize()`
-原子が存在する範囲を返す。
-
-`getNativeBondLengt(resSeq a, resSeq b)`
-2つの `resSeq` を指定すると、対応する2残基間の距離を返す。
-
-`getNativeAngle(resSeq a, resSeq b, resSeq c)`
-3つの `resSeq` を指定すると、対応する3残基のなす角を返す。値域は 0 < x < pi.
+## Installation
 
 
-`getNativeDihedral(resSeq a, resSeq b, resSeq c, resSeq d)`
-4つの `resSeq` を指定すると、対応する4残基の二面角を返す。値域は -pi < x < pi で、右ねじ方向が正。
+```
+$ make
+```
 
-`shift(distance, direction)`
-構造全体を平行移動させる。
+and pray
 
-`getPdbText()`
-構造全体を PDB ファイルとして出力する。
+## Usage 
+
+
+```bash
+$ python pdb2force.py foo.pdb > input.json
+$ ./mashmol input.json
+```
+
+and see `output.pdb` and `output.ts`
+
+入力ファイル (JSON) を読ませる形式。入力ファイルは PDB から pdb2force.py で自動生成できる。
+
+結果は output.pdb および output.ts として生成される。
+
+あとは `pdb2force.py` の中を見て、適当にパラメータとかいじる。
+
+## issue
+
+* 計算が遅すぎる
+    * 並列化するとかえって遅い
+    * 何か致命的な部分があるのか、それとも単に OpenMM が数百粒子というスケールに合わないのか
+
+
+
